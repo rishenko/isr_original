@@ -1,0 +1,328 @@
+PDS_VERSION_ID         = PDS3
+RECORD_TYPE            = STREAM
+OBJECT                 = TEXT
+  PUBLICATION_DATE     = 2006-01-01
+  INTERCHANGE_FORMAT   = ASCII
+  NOTE                 = "Errata for Cassini ISS EDR and 
+                          Calibration Files Archive Volume DVDs."
+END_OBJECT             = TEXT
+END
+
+
+COMMENTS ON THE CASSINI ISS EXPERIMENT DATA RECORDS AND CALIBRATION 
+FILES ARCHIVE COLLECTION
+
+This document contains comments and errors concerning the Cassini
+ISS raw experiment data records and calibration files archive 
+published on this collection of DVDs.  
+
+This errata file is modified as problems/issues are encountered 
+during the active mission lifetime, and result in changes or 
+corrections, or notes worthy to the end user. For the most 
+up-to-date version of this file look on the internet web site 
+of the PDS Imaging Node:
+
+    http://pds-imaging.jpl.nasa.gov/
+
+----------------------------------------------------------------------
+
+
+------------------
+DATA Volume Errata
+------------------
+
+1. PDS Standards Exceptions
+
+As part of the ISS index.tab files, the keyword DETECTOR_TEMPERATURE
+has been represented with measurements in units Celsius (C).  Per the 
+PDS Standards Reference Document, this keyword is typically found as 
+units measured in Kelvin (K). See Appendix A, Cassini ISS Archive 
+Volume SIS, JPL D-27548 and Cassini ISS Tour VICAR Image Data 
+File and Detached PDS Label SIS JPL D-24724) for more details 
+on this keyword.
+
+
+
+2. Cassini ISS Ground Calibration Files
+
+The ground calibration image files acquired pre-launch from the 
+Cassini ISS instrument were produced and retained on a collection 
+of CD-ROMs intended to be PDS-compliant. The PDS Imaging Node 
+converted the dataset from CD-ROMs to DVDs for inclusion in this ISS 
+archive collection. They can be found on the first ten calibration 
+volumes.  
+
+
+
+3. SPICE-generated Keywords
+
+Keywords calculated using SPICE may use a c-smithed c-kernel (as 
+indicated in the SPICE_PRODUCT_ID keyword) in replacement of a 
+reconstructed ACS c-kernel.  The c-smithed c-kernel is produced by
+automated auto-navigation software on a subset of the images.  In most
+cases it is more accurate than the ACS c-kernel.  The kernel takes 
+the naming convention "<image name>.bc".  For example: 
+"N1363625260_2.IMG.bc.  
+
+This c-kernel is delivered to NAIF some time afterwards in a concatenated 
+file containing a larger time range of c-smithed c-kernels. This file 
+takes the naming convention "<yy><doy>_<yy><doy>c<version>_ISS.bc". 
+For example: "00275_00285ca_ISS.bc".  
+To find the original c-smithed c-kernel, convert the image SCLK time to 
+a day-of-year date to find the concatenated c-smithed kernel it is 
+contained within. 
+
+
+
+4. TELEMETRY_FORMAT_ID keyword problem
+
+The label keyword value TELEMETRY_FORMAT_ID will be set to UNK for all images 
+from Saturn Tour.  This is due to a flight software upgrade in sequence C37 
+(starting at SCLK 1431917802) that routed the channelized engineering data to 
+another partition, which isn't downlinked unless there is an emergency, so 
+the ability to determine the telemetry format was lost.  The 
+INSTRUMENT_DATA_RATE keyword can be useful to help figure out how fast data 
+was being sent to the CDS, and is somewhat an indicator of the telemetry 
+mode, although it is not deterministic (i.e., some telemetry modes share the 
+same instrument data rate.)
+
+
+
+5. PDS Label pointer discrepancy
+
+There is a problem with the PDS label generation portion of the telemproc.  
+The pointers were inadvertently hardcoded in the PDS labels.  A fix will be 
+issued in March of 2005 and efforts will be made to fix all affected labels
+previous to this date.
+
+
+
+6. BIAS_STRIP_MEAN label value
+
+Before sequence C32 (before SCLK 1401927444), when FLIGHT_SOFTWARE_VERSION 
+= 1.2, this uses one overclocked pixel value per line. This value should be 
+ignored for LOSSY compressed data as it does not contain valid data. 
+
+During sequence C32 (beginning at SCLK 1401927444), when 
+FLIGHT_SOFTWARE_VERSION = 1.3, this uses six overclocked pixel values per 
+line. This value should be ignored for LOSSY compressed data as it does not 
+contain valid data.
+
+When FLIGHT_SOFTWARE_VERSION = 1.4, for Lossy compressed data, this value is 
+the mean of the overclocked pixel sum returned in the last compression block 
+of the image.
+
+
+
+7. DARK_STRIP_MEAN label value
+
+For FLIGHT_SOFTWARE_VERSION_ID=1.2 or 1.3, this value should be ignored for 
+LOSSY compressed data as it does not contain valid data.
+
+When the FLIGHT_SOFTWARE_VERSION_ID = 1.4, for Lossy compressed data this 
+value is the mean of the extended pixel sum returned in the last compression 
+block for the image.
+
+
+
+8. Filename case consistency
+
+All filenames and directories on the DATA volume are in lower-case with the
+exception of the image vicar and label files in the data directory.  There
+are possibly some inconsistencies in the documentation where it may reference
+the file by the wrong case.
+
+
+
+9. Rings_Flag keyword fix
+
+The Rings_Flag in the index.tab file was being set to true only when the A, 
+B, C, or D rings were visible in the image.  This condition was updated to 
+also include the E, F, and G rings in this test.  This affects archive disks 
+COISS_2007 and later (image mid time 2004-272T00:48:55.974 and beyond).  
+The Rings_Flag definition in the index.lbl file was also updated to reflect
+this change.
+
+
+
+10. Target_Distance keyword could have been named Target_Center_Distance
+
+The Target_Distance keyword in the index.tab file calculates the distance 
+from the spacecraft to the center of the target body.  However, PDS defines 
+Target_Distance as "to a point on the target body".  Target_Center_Distance 
+could have been chosen as this keyword name to more accurately match the PDS 
+Data Dictionary, but it was not.
+
+
+
+11. UNITS keyword added to index.lbl keyword definitions
+
+The UNITS keyword was added to each COLUMN object in the index.lbl keyword
+definitions file.  This new index.lbl file will appear on volumes COISS_2007
+and later.  Index keyword units are also defined in the Appendix A of the
+archsis.pdf file.
+
+
+
+12. Incorrect 'Not Applicable' keyword values
+
+The following keywords values in the index.tab file are incorrectly set to 
+the value of '0' (zero) instead of the correct value of '-1e+32' (N/A) in 
+cases where the value should be 'Not Applicable': Emission_Angle, 
+Incidence_Angle, Phase_Angle, Center_Latitude, Center_Longitude.  This only 
+applies to volume COISS_2007 and prior.
+
+
+
+13. Non-standard numerical format used for N/A and NULL
+
+Non-standard numerical values of '-1e+32' for N/A and '1e+32' for NULL were
+used in the index.tab files on all volumes.  The PDS-standard values are
+'-1.E32' and '1.E32' respectively.
+
+
+
+14. Non-standard numerical format used for unknown real keyword values
+
+A non-standard numerical value of '-999.0' for unknown real keyword values 
+was used in the index.tab files on all volumes.  The PDS-standard value is 
+'1.E32'.  Keywords that use this value are detailed in table 6.3 of 
+edrsis.pdf.
+
+A new version of the product generation software became operational in
+April of 2006 which allows for improved recovery of truncated, lossy-
+compressed images.  In the past, these images would not have been created at 
+all.  Using the new version when partial, lossy images are generated the 
+values for three keywords are unrecoverable.  In this case, MISSING_LINES is 
+set to "UNK", and the non-standard value of '-999.0' is used for the unknown 
+reals INST_CMPRS_RATIO and the second (actual) element of INST_CMPRS_RATE.
+
+
+
+15. Non-standard format used for PRODUCT_CREATION_TIME on some volumes
+
+Volume COISS_1006 contains .lbl files in the data sub-directories which 
+contain PRODUCT_CREATION_TIME values which are quoted and end in a Z.  The 
+correct value should not be quoted and should not have the trailing Z.
+
+Volume COISS_2010 contains  .lbl files in the data sub-directories which 
+contain PRODUCT_CREATION_TIME values which are quoted.  The correct value 
+should not be quoted.
+
+
+
+
+----------------------------------------------------------------------
+
+
+
+
+-------------------------
+CALIBRATION Volume Errata
+-------------------------
+
+Calibration activities for the ISS cameras are on-going, and they are 
+incomplete at the present time. Some calibration algorithms have yet to be 
+implemented or are only partially implemented. In addition, many future 
+improvements to the current calibration algorithms have been identified. Some 
+of these outstanding items are listed below.
+
+1. PDS Standards Exceptions
+
+Many of the PDS labels for the data files on the calibration volume, as well
+as for the sample calibrated images, have yet to be finalized. We expect some
+errors to be present in these PDS labels, and will work to fix them as they
+are made known.
+
+
+
+2. Dark current
+
+The current dark current modeling algorithm is divided into two parts: a 
+code that examines a set of dark images and creates a parameter file from 
+them, and another code that takes that parameter file and constructs a dark 
+image appropriate for a specific set of camera parameters. Together, this
+dark model is referred to in the CISSCAL calibration software as the
+"interpolation model."
+
+The first code has been written by Bob West, but it is still being developed. 
+Once complete, it will be included in future versions of the calibration 
+archive volume. For now, the calibration volume contains only the parameter 
+files produced by this code for NAC and WAC images. These can be found 
+within the darkcurrent subdirectory of the CALIB directory. 
+
+The second code that actually generates the dark current files is still 
+being developed as well, but the current working version has already been 
+integrated into CISSCAL.
+
+There is also an alternate dark subtraction method, which is referred to 
+in CISSCAL as the "two-parameter model." This method is outdated and 
+generally produces unsatisfactory results, but has been included for the
+time being for completeness while the interpolation model is being 
+finalized.
+
+
+
+3. Flat fields
+
+Each filter combination has a signature flat field pattern that needs to be 
+divided out of each image during the calibration process. This pattern is 
+captured in the "slope files" which were derived from ground calibration 
+images, and they are included on the calibration volume. Unfortunately, the 
+flatfield is not constant with time: its structure changes whenever a dust 
+grain lands on one of the filters of the CCD window, or an already-present 
+dust grain simply shifts position.
+
+Analysis is currently underway to determine the various flatfield changes 
+that have occurred since launch, so that the appropriate corrections can be 
+made to the flatfielding calibration step. So far only two of these 
+corrections have been determined, both of which apply to the NAC only: a 
+correction for a large dust ring discovered during Venus flyby, and another 
+correction derived from Titan flyby data that removes a residual "mottle 
+map." Both of these corrections are supplied with the calibration volume. 
+Similar filter-specific and camera-specific flatfield corrections will be 
+available in the future. 
+
+The slope file subdirectory of the CALIB directory contains three database
+files which associate the various filter combinations with their appropriate
+slope files. The first of these, slope_db_1.tab, is the original slope file
+database. The third database file, slope_db_3.tab, has been altered to take
+into account new slope files generated for the NAC that have been corrected
+for anti-blooming pixel pairs. Technically this is the "correct" database 
+file. Unfortunately, some of the slope files to which it refers have since 
+been found to be unacceptably noisy. Thus, the database file that is used
+by CISSCAL and currently considered "best" is the second, slope_db_2.tab.
+
+
+
+4. Absolute Calibration
+
+As detailed in [PORCOETAL2004], absolute calibration of the ISS cameras is 
+currently incomplete. Quantum efficiency correction functions have been 
+derived for both cameras, but filter-specific absolute correction factors 
+have so far only been calculated for the NAC. Currently, absolute flux in 
+the NAC is only known to within an error of about 10-20% depending on filter 
+combination (better for single broad-band filters than for narrow-band 
+filters or filter combinations), and 15-25% in the WAC.
+
+Also note that some filters, such as the polarized, methane, and continuous-
+band filters, require special attention for proper absolute calibration. This 
+analysis is currently underway.
+
+
+
+5. Temperature Dependency
+
+Many of the phenomena detailed during ground calibration testing were found 
+to exhibit temperature dependency. Examples are the uneven bit-weighting, 
+flatfield, and shutter offset corrections. Unfortunately, the algorithms 
+currently implemented for these calibration steps do not give a realistic 
+treatment of this temperature dependency. Attemps will be made to correct
+this shortfall in future versions.
+
+
+
+6. Coherent Noise Sources
+
+Calibration algorithms have yet to be developed for some types of coherent 
+noise found in the image data, such as the vertical banding. 

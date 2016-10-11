@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ISIS_LABEL>
+	<SFDU_LABEL>CCSD3ZF0000100000001NJPL3IF0PDS200000001</SFDU_LABEL>
+	<COMMENT>/* FILE FORMAT AND LENGTH */</COMMENT>
+	<item key="RECORD_TYPE" quoted="false">FIXED_LENGTH</item>
+	<item key="RECORD_BYTES" quoted="false">836</item>
+	<item key="FILE_RECORDS" quoted="false">806</item>
+	<item key="LABEL_RECORDS" quoted="false">3</item>
+	<COMMENT>/* POINTERS TO STARTING RECORDS OF MAJOR OBJECTS IN FILE
+	</COMMENT>
+	<item key="^IMAGE_HISTOGRAM" quoted="false">4</item>
+	<item key="^ENGINEERING_TABLE" quoted="false">6</item>
+	<item key="^IMAGE" quoted="false">7</item>
+	<COMMENT>/* IMAGE DESCRIPTION</COMMENT>
+	<item key="SPACECRAFT_NAME" quoted="false">VOYAGER_1</item>
+	<item key="MISSION_PHASE_NAME" quoted="false">JUPITER_ENCOUNTER</item>
+	<item key="TARGET_NAME" quoted="false">IO</item>
+	<item key="IMAGE_ID" quoted="false">'0094J1+000'</item>
+	<COMMENT>IMAGE_NUMBER = 16390.57 /*FLIGHT DATA SUBSYSTEM (FDS)
+	</COMMENT>
+	<item key="IMAGE_TIME" quoted="false">1979-03-05T13:19:00Z</item>
+	<item key="EARTH_RECEIVED_TIME" quoted="false">1979-03-05T13:56:51Z</item>
+	<item key="INSTRUMENT_NAME" quoted="false">WIDE_ANGLE_CAMERA</item>
+	<item key="SCAN_MODE_ID" quoted="false">'1:1'</item>
+	<item key="SHUTTER_MODE_ID" quoted="false">NAONLY</item>
+	<item key="GAIN_MODE_ID" quoted="false">LOW</item>
+	<COMMENT>EDIT_MODE_ID = '1:1' /*FULL RESOLUTION</COMMENT>
+	<item key="FILTER_NAME" quoted="false">ORANGE</item>
+	<item key="FILTER_NUMBER" quoted="false">7</item>
+	<item key="EXPOSURE_DURATION" quoted="false">0.7200 &lt;SECONDS&gt;</item>
+	<item key="NOTE" quoted="true"> SOUTHERN HEMISPHERE NA CLEAR MOSAIC
+	</item>
+	<COMMENT>/* DESCRIPTION OF THE OBJECTS CONTAINED IN FILE</COMMENT>
+	<OBJECT name="IMAGE_HISTOGRAM">
+		<item key="ITEMS" quoted="false">256</item>
+		<item key="ITEM_TYPE" quoted="false">VAX_INTEGER</item>
+		<item key="ITEM_BITS" quoted="false">32</item>
+		<OBJECT name="ENGINEERING_TABLE">
+			<item key="BYTES" quoted="false">242</item>
+			<item key="^STRUCTURE" quoted="false">'ENGTAB.LBL'</item>
+			<OBJECT name="IMAGE">
+				<item key="LINES" quoted="false">800</item>
+				<item key="LINE_SAMPLES" quoted="false">800</item>
+				<item key="LINE_SUFFIX_BYTES" quoted="false">36</item>
+				<item key="SAMPLE_TYPE" quoted="false">UNSIGNED_INTEGER</item>
+				<item key="SAMPLE_BITS" quoted="false">8</item>
+				<item key="SAMPLE_BIT_MASK" quoted="false">2#11111111#</item>
+				<item key="^LINE_SUFFIX_STRUCTURE" quoted="false">'LINESUFX.LBL'</item>
+			</OBJECT>
+		</OBJECT>
+	</OBJECT>
+</ISIS_LABEL>
