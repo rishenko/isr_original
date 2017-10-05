@@ -26,8 +26,9 @@ import com.astrodoorways.converter.vicar.cassini.Lut8to12BitCalibrator;
 import com.astrodoorways.converter.vicar.cassini.TwoHzCalibrator;
 import com.astrodoorways.db.PersistenceConfig;
 import com.astrodoorways.db.filesystem.FileInfo;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-@RunWith(JUnit4.class)
+//@RunWith(SpringJUnit4ClassRunner.class)
 public class ConverterTest {
 	//	@Test(expected = IllegalArgumentException.class)
 	public void constructor() throws FileNotFoundException, IOException {
@@ -133,7 +134,7 @@ public class ConverterTest {
 		converter.beginConversion();
 	}
 
-	//	@Test
+	@Test
 	public void conversionCassiniNeedsCalibrated() throws Exception {
 		String readDir = "src/test/resources/test-dirs/read/data/cassini/needsCalib";
 		String writeDir = "src/test/resources/test-dirs/write/cassini/needsCalib";
@@ -141,7 +142,7 @@ public class ConverterTest {
 		converter.beginConversion();
 	}
 
-	//	@Test
+	@Test
 	public void conversionCassiniCalibrated() throws Exception {
 		System.getProperties().setProperty(ApplicationProperties.SEQUENCE, "2012_CASS_TEST");
 		String readDir = "src/test/resources/test-dirs/read/data/cassini/calibrated/";
@@ -166,7 +167,7 @@ public class ConverterTest {
 		converter.beginConversion();
 	}
 
-	@Test
+	//@Test
 	public void convertSDO() throws Exception {
 		/*System.getProperties().setProperty("cassini.calibration.dir",
 				"/Users/kevinmcabee/Desktop/astroImagery/coiss_0011_v2");*/

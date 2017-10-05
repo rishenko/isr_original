@@ -25,7 +25,7 @@ import org.springframework.transaction.annotation.TransactionManagementConfigure
 @ComponentScan("com.astrodoorways")
 public class PersistenceConfig implements TransactionManagementConfigurer {
 
-	Logger logger = LoggerFactory.getLogger(PersistenceConfig.class);
+	private static final Logger logger = LoggerFactory.getLogger(PersistenceConfig.class);
 
 	@Autowired
 	private Environment env;

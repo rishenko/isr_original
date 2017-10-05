@@ -1,5 +1,6 @@
 #!/bin/csh
-
+rm -rf ./target
+mkdir ./target
 mkdir ./target/classes/
 
 # External packages and jars.  Edit these to reflect your own pathnames
