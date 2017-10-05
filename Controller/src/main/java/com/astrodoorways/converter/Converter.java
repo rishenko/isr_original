@@ -73,9 +73,6 @@ public class Converter {
 	private Job job;
 
 	/**
-	 * @param args
-	 *            process the incoming arguments, including setting of
-	 *            configuration properties
 	 * @throws IOException
 	 * @throws FileNotFoundException
 	 */
@@ -258,7 +255,7 @@ public class Converter {
 		List<String> targets = ApplicationProperties.getPropertyAsStringList(ApplicationProperties.TARGET_LIST);
 		List<String> filters = ApplicationProperties.getPropertyAsStringList(ApplicationProperties.FILTER_LIST);
 
-		logger.debug("targets: {} filters: {} metadataCount: {}", targets, filters, metadataCount);
+		logger.debug("targets: {} filters: {} metadataCount: {}", new Object[]{targets, filters, metadataCount});
 		converterExecutor.setCorePoolSize(numProcesses);
 
 		if (isSequence()) {

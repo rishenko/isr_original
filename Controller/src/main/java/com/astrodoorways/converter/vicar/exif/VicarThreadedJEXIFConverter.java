@@ -54,15 +54,13 @@ public class VicarThreadedJEXIFConverter {
 		logger.trace("value map {}", new Object[] { valueMap });
 
 		try {
-			Map<Tag, String> tagMap = new HashMap<Tag, String>();
-			tagMap.put(ExifIFD.EXPOSURETIME, valueMap.get(VicarConstants.EXPOSURE));
-			tagMap.put(ExifIFD.DATETIMEORIGINAL,
+			info.setTagValue(ExifIFD.EXPOSURETIME, valueMap.get(VicarConstants.EXPOSURE));
+			info.setTagValue(ExifIFD.DATETIMEORIGINAL,
 					metadataProcessor.convertVicarDateToExifFormat(valueMap.get(VicarConstants.TIME)));
-			tagMap.put(OtherExifTags.LENS, valueMap.get(VicarConstants.CAMERA));
-			tagMap.put(OtherExifTags.MODEL, valueMap.get(VicarConstants.FILTER));
-			tagMap.put(OtherExifTags.MAKE, valueMap.get(VicarConstants.MISSION));
-			tagMap.put(ExifIFD.USERCOMMENT, valueMap.get(VicarConstants.TARGET));
-			info.setTagValue(tagMap);
+			info.setTagValue(OtherExifTags.LENS, valueMap.get(VicarConstants.CAMERA));
+			info.setTagValue(OtherExifTags.MODEL, valueMap.get(VicarConstants.FILTER));
+			info.setTagValue(OtherExifTags.MAKE, valueMap.get(VicarConstants.MISSION));
+			info.setTagValue(ExifIFD.USERCOMMENT, valueMap.get(VicarConstants.TARGET));
 			logger.trace("finished setting tags");
 		} catch (ExifError e) {
 			logger.error("exif processing error", e);

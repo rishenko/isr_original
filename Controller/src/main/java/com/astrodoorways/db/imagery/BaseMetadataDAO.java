@@ -4,7 +4,6 @@ import java.math.BigInteger;
 import java.util.Collection;
 import java.util.List;
 
-import org.fest.util.Collections;
 import org.hibernate.Criteria;
 import org.hibernate.Query;
 import org.hibernate.ScrollMode;
@@ -12,6 +11,7 @@ import org.hibernate.ScrollableResults;
 import org.hibernate.criterion.Example;
 import org.hibernate.criterion.Order;
 import org.hibernate.criterion.Restrictions;
+import org.hibernate.engine.Collections;
 import org.hibernate.transform.Transformers;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.astrodoorways.db.AbstractDao;
 import com.astrodoorways.db.filesystem.Job;
+import org.springframework.util.CollectionUtils;
 
 @Component
 @Scope("prototype")
@@ -45,13 +46,13 @@ public class BaseMetadataDAO extends AbstractDao implements MetadataDAO {
 		Criteria criteria = getSession().createCriteria(Metadata.class);
 
 		criteria.createCriteria("fileInfo").add(Restrictions.eq("job.id", job.getId()));
-		if (!Collections.isEmpty(filters)) {
+		if (!CollectionUtils.isEmpty(filters)) {
 			criteria.add(Restrictions.in("filterOne", filters));
 		}
-		if (!Collections.isEmpty(targets)) {
+		if (!CollectionUtils.isEmpty(targets)) {
 			criteria.add(Restrictions.in("target", targets));
 		}
-		if (!Collections.isEmpty(orderBy)) {
+		if (!CollectionUtils.isEmpty(orderBy)) {
 			for (String order : orderBy) {
 				criteria.addOrder(Order.asc(order));
 			}
@@ -120,21 +121,21 @@ public class BaseMetadataDAO extends AbstractDao implements MetadataDAO {
 	public Collection<Metadata> distinctGroupings(Job job, List<String> targets, List<String> filters) {
 
 		String sql = "select distinct mission, target, filterOne, filterTwo from metadata join fileInfo as fileInfo where fileInfo.job = :job";
-		if (!Collections.isEmpty(targets)) {
+		if (!CollectionUtils.isEmpty(targets)) {
 			sql += " targets in (:targets)";
 		}
 
-		if (!Collections.isEmpty(filters)) {
+		if (!CollectionUtils.isEmpty(filters)) {
 			sql += " filter in (:filters)";
 		}
 
 		Query query = getSession().createQuery(sql);
 		query.setParameter(":job", job);
-		if (!Collections.isEmpty(targets)) {
+		if (!CollectionUtils.isEmpty(targets)) {
 			query.setParameterList(":targets", targets);
 		}
 
-		if (!Collections.isEmpty(filters)) {
+		if (!CollectionUtils.isEmpty(filters)) {
 			query.setParameter(":filters", filters);
 		}
 

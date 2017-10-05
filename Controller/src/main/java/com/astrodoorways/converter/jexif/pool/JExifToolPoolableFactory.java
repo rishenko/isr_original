@@ -7,8 +7,8 @@ import java.io.IOException;
 import java.util.Properties;
 import java.util.UUID;
 
+import com.google.common.base.Strings;
 import org.apache.commons.pool.PoolableObjectFactory;
-import org.fest.util.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,12 +17,10 @@ import be.pw.jexif.internal.constants.ExecutionConstant;
 
 public class JExifToolPoolableFactory implements PoolableObjectFactory<JExifTool> {
 
-	private final String argsFileDirectory;
-
 	private static Logger logger = LoggerFactory.getLogger(JExifToolPoolableFactory.class);
 
 	public JExifToolPoolableFactory(String argsFileDirectory) throws FileNotFoundException, IOException {
-		if (Strings.isEmpty(argsFileDirectory)) {
+		if (Strings.isNullOrEmpty(argsFileDirectory)) {
 			throw new IllegalArgumentException("the directory housing the exiftool args file cannot be null");
 		}
 
@@ -35,17 +33,12 @@ public class JExifToolPoolableFactory implements PoolableObjectFactory<JExifTool
 		if (!argsFileDirectory.endsWith("/")) {
 			argsFileDirectory += "/";
 		}
-		this.argsFileDirectory = argsFileDirectory;
 	}
 
 	@Override
 	public JExifTool makeObject() throws Exception {
 		logger.debug("return a new instance of JExifTool");
-		File file = null;
-		do {
-			file = new File(argsFileDirectory + UUID.randomUUID());
-		} while (file.exists());
-		return new JExifTool(file.getAbsolutePath());
+		return new JExifTool();
 	}
 
 	@Override

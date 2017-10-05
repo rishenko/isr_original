@@ -54,8 +54,7 @@ public class MetadataProcessor {
 		if (node == null)
 			node = metadata.getAsTree(metadata.getNativeMetadataFormatName());
 		handler = findMetadataHandler(node);
-		handler.buildValueMapFromMetadata(node);
-
+		return handler.buildValueMapFromMetadata(node);
 	}
 
 	private MetadataHandler findMetadataHandler(Node node) {
