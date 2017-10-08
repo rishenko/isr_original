@@ -121,11 +121,6 @@
             <artifactId>vicar-source</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
-        <!-- <dependency> -->
-        <!-- <groupId>com.tomgibara.imageio</groupId> -->
-        <!-- <artifactId>imageio-tiff</artifactId> -->
-        <!-- <version>1.1-SNAPSHOT</version> -->
-        <!-- </dependency> -->
         <dependency>
             <groupId>com.tomgibara.imageio</groupId>
             <artifactId>imageio-tiff</artifactId>
@@ -134,7 +129,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>11.0.2</version>
+            <version>23.1-jre</version>
         </dependency>
         <dependency>
             <groupId>com.astrodoorways</groupId>
@@ -208,6 +203,21 @@
             <artifactId>javassist</artifactId>
             <version>3.17.1-GA</version>
         </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-api -->
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.0.13</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.springframework/spring-test -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-test</artifactId>
+            <version>4.3.11.RELEASE</version>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-orm</artifactId>
@@ -219,32 +229,6 @@
             <version>4.3.11.RELEASE</version>
         </dependency>
 
-        <!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-api -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>1.7.25</version>
-        </dependency>
-
-
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>1.2.3</version>
-        </dependency>
-
-        <!-- https://mvnrepository.com/artifact/org.springframework/spring-test -->
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-test</artifactId>
-            <version>4.3.11.RELEASE</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.hsqldb</groupId>
-            <artifactId>hsqldb</artifactId>
-            <version>2.3.2</version>
-        </dependency>
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>

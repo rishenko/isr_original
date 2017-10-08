@@ -9,10 +9,11 @@
     <name>ISR Converter</name>
     <modules>
         <module>vicar-source</module>
-        <module>downloader.sdo</module>
         <module>fits</module>
+
         <module>filesystem</module>
-        <module>Controller</module>
-        <module>Downloader</module>
+        <module>downloader</module>
+        <module>downloader.sdo</module>
+        <module>converter</module>
     </modules>
 </project>
