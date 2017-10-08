@@ -5,6 +5,13 @@
     <artifactId>converter</artifactId>
     <version>0.2-SNAPSHOT</version>
 
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>2.0.0.M4</version>
+    </parent>
+
     <repositories>
         <repository>
             <id>tomgibara</id>
@@ -18,6 +25,14 @@
         <repository>
             <id>maven-central</id>
             <url>http://central.maven.org/maven2/</url>
+        </repository>
+        <repository>
+            <id>spring-milestones</id>
+            <name>Spring Milestones</name>
+            <url>https://repo.spring.io/libs-milestone</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
         </repository>
         <repository>
             <id>Geotoolkit</id>
@@ -46,21 +61,6 @@
                     <target>1.8</target>
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>3.0.2</version>
-                <configuration>
-                    <archive>
-                        <!-- <manifestFile>src/main/resources/META-INF/MANIFEST.MF</manifestFile> -->
-                        <manifest>
-                            <addClasspath>true</addClasspath>
-                            <classpathPrefix>lib/</classpathPrefix>
-                            <mainClass>com.astrodoorways.converter.cli.RunConverter</mainClass>
-                        </manifest>
-                    </archive>
-                </configuration>
-            </plugin>
 
             <plugin>
                 <artifactId>maven-dependency-plugin</artifactId>
@@ -73,33 +73,6 @@
                         <configuration>
                             <outputDirectory>${project.build.directory}/lib</outputDirectory>
                         </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <!-- plugin> <artifactId>maven-assembly-plugin</artifactId> <version>2.4</version>
-                <configuration> <descriptorRefs> <descriptorRef>jar-with-dependencies</descriptorRef>
-                </descriptorRefs> <archive> <manifest> <mainClass>com.astrodoorways.SimpleConverter</mainClass>
-                </manifest> </archive> </configuration> <executions> <execution> <id>make-assembly</id>
-                <phase>package</phase> <goals> <goal>single</goal> </goals> </execution>
-                </executions> </plugin -->
-            <plugin>
-                <groupId>com.jolira</groupId>
-                <artifactId>onejar-maven-plugin</artifactId>
-                <version>1.4.4</version>
-                <executions>
-                    <execution>
-                        <configuration>
-                            <!-- Optional -->
-                            <onejarVersion>0.97</onejarVersion>
-                            <!-- Optional, use only if you need to include native libraries (dll's) -->
-                            <!-- Optional, default is false -->
-                            <attachToBuild>true</attachToBuild>
-                            <!-- Optional, default is "onejar" -->
-                            <classifier>onejar</classifier>
-                        </configuration>
-                        <goals>
-                            <goal>one-jar</goal>
-                        </goals>
                     </execution>
                 </executions>
             </plugin>
@@ -174,11 +147,6 @@
             <classifier>jar-with-dependencies</classifier>
         </dependency>
         <dependency>
-            <groupId>org.hibernate</groupId>
-            <artifactId>hibernate-core</artifactId>
-            <version>3.6.10.Final</version>
-        </dependency>
-        <dependency>
             <groupId>com.jolbox</groupId>
             <artifactId>bonecp</artifactId>
             <version>0.7.1.RELEASE</version>
@@ -187,16 +155,6 @@
             <groupId>com.jolbox</groupId>
             <artifactId>bonecp-provider</artifactId>
             <version>0.7.1.RELEASE</version>
-        </dependency>
-        <dependency>
-            <groupId>org.hibernate.javax.persistence</groupId>
-            <artifactId>hibernate-jpa-2.1-api</artifactId>
-            <version>1.0.0.Draft-16</version>
-        </dependency>
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-            <version>1.4.178</version>
         </dependency>
         <dependency>
             <groupId>org.javassist</groupId>
@@ -213,20 +171,21 @@
 
         <!-- https://mvnrepository.com/artifact/org.springframework/spring-test -->
         <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-test</artifactId>
-            <version>4.3.11.RELEASE</version>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-orm</artifactId>
-            <version>4.3.11.RELEASE</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-context</artifactId>
-            <version>4.3.11.RELEASE</version>
         </dependency>
 
         <dependency>

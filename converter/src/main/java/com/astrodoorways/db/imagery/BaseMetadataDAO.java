@@ -11,7 +11,7 @@ import org.hibernate.ScrollableResults;
 import org.hibernate.criterion.Example;
 import org.hibernate.criterion.Order;
 import org.hibernate.criterion.Restrictions;
-import org.hibernate.engine.Collections;
+import org.hibernate.engine.internal.Collections;
 import org.hibernate.transform.Transformers;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
