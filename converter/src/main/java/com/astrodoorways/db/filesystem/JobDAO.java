@@ -1,15 +1,7 @@
 package com.astrodoorways.db.filesystem;
 
-import java.util.List;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
-import com.astrodoorways.db.DAO;
-
-public interface JobDAO extends DAO {
-
-	void saveJob(Job job);
-
-	Job getJob(Long id);
-
-	List<Job> getAllJobs();
-
-}
+@Repository("jobDAO")
+public interface JobDAO extends JpaRepository<Job, Long> {}

@@ -3,6 +3,7 @@ package com.astrodoorways.db.filesystem;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.List;
 
 import org.hibernate.ScrollableResults;
 
@@ -15,16 +16,13 @@ public interface FileStructureToDatabaseWriter {
 	 * the paths
 	 * 
 	 * @param file
-	 * @param writer
 	 * @throws IOException 
 	 */
 	void writeFileStructure(File file) throws IOException;
 
 	Collection<String> getCollectionOfFiles();
 
-	ScrollableResults getFileInfos();
-
-	void clear();
+	List<FileInfo> getFileInfos();
 
 	FileInfoDAO getFileInfoDAO();
 

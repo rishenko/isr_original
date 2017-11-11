@@ -68,9 +68,6 @@ public class BaseMetadataProcessRunnable implements Runnable, MetadataProcessRun
 	@Override
 	public void run() {
 		final File file;
-		Session session = fileInfoDAO.getSession();
-		//		FileInfo fileInfoNew = (FileInfo) session.get(FileInfo.class, fileInfo.getId());
-		List<FileInfo> fileInfos = session.createCriteria(FileInfo.class).list();
 
 		// if the file has an intermediary through preprocess, reference it
 		if (fileInfo.getPreprocessedFileName() == null) {
@@ -134,9 +131,9 @@ public class BaseMetadataProcessRunnable implements Runnable, MetadataProcessRun
 			}
 		}
 
-		metadataDAO.saveMetadata(metadata);
+		metadataDAO.save(metadata);
 		metadata.setFileInfo(fileInfo);
-		metadataDAO.saveMetadata(metadata);
+		metadataDAO.save(metadata);
 		logger.trace("Metadata: {} FileInfo: {}", metadata.getId(), fileInfo.getId());
 		logger.debug("finished processing metadata for {} - {}", filePath, completionMessage());
 	}

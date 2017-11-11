@@ -1,18 +1,11 @@
 package com.astrodoorways.db.filesystem;
 
+import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.OneToMany;
-import javax.persistence.SequenceGenerator;
-
-@Entity(name = "job")
+@Entity
 public class Job {
 	private Long id;
 	private String name;
@@ -31,6 +24,7 @@ public class Job {
 		this.id = id;
 	}
 
+	@Column
 	public String getName() {
 		return name;
 	}
@@ -39,6 +33,7 @@ public class Job {
 		this.name = name;
 	}
 
+	@Column
 	public Date getDate() {
 		return date;
 	}

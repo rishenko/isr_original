@@ -73,7 +73,7 @@ public class BaseFileStructureToDatabaseWriter implements FileStructureWriter, F
 				fileInfo.setDirectory(file.getParentFile().getCanonicalPath());
 				job.getFiles().add(fileInfo);
 				fileInfo.setJob(job);
-				getFileInfoDAO().saveFilePath(fileInfo);
+				getFileInfoDAO().save(fileInfo);
 				logger.debug("{} file added to the database: {}", new Object[] { count++, fileInfo.getFilePath() });
 			}
 		}
@@ -84,12 +84,9 @@ public class BaseFileStructureToDatabaseWriter implements FileStructureWriter, F
 	 */
 	@Override
 	public Collection<String> getCollectionOfFiles() {
-		FileInfo dto = new FileInfo();
-		dto.setJob(job);
-		ScrollableResults results = getFileInfoDAO().searchByExample(dto);
+		List<FileInfo> results = getFileInfoDAO().findByJob(job);
 		List<String> fileNames = new ArrayList<String>();
-		while (results.next()) {
-			FileInfo result = (FileInfo) results.get()[0];
+		for (FileInfo result: results) {
 			fileNames.add(result.getDirectory() + "/" + result.getFileName());
 		}
 		return fileNames;
@@ -99,18 +96,8 @@ public class BaseFileStructureToDatabaseWriter implements FileStructureWriter, F
 	 * @see com.astrodoorways.db.filesystem.FileStructureToDatabaseWriter#getFileInfos()
 	 */
 	@Override
-	public ScrollableResults getFileInfos() {
-		FileInfo dto = new FileInfo();
-		dto.setJob(job);
-		return getFileInfoDAO().searchByExample(dto);
-	}
-
-	/* (non-Javadoc)
-	 * @see com.astrodoorways.db.filesystem.FileStructureToDatabaseWriter#clear()
-	 */
-	@Override
-	public void clear() {
-		fileInfoDAO.clear();
+	public List<FileInfo> getFileInfos() {
+		return getFileInfoDAO().findByJob(job);
 	}
 
 	/* (non-Javadoc)

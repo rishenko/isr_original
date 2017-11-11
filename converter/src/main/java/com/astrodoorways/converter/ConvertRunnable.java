@@ -146,7 +146,7 @@ public class ConvertRunnable implements Runnable {
 			outputPathList = outputPathList.substring(0, 2040) + "...";
 
 		fileInfo.setOutputFileName(outputPathList);
-		fileInfoDAO.saveFilePath(fileInfo);
+		fileInfoDAO.save(fileInfo);
 	}
 
 	private void preProcessImage() throws IOException, InterruptedException {

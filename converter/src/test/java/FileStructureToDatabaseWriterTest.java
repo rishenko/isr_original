@@ -1,16 +1,13 @@
-import static org.junit.Assert.assertTrue;
-
-import java.io.File;
-import java.io.IOException;
-
+import com.astrodoorways.db.filesystem.BaseFileStructureToDatabaseWriter;
+import com.astrodoorways.db.filesystem.FileInfo;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-import com.astrodoorways.db.filesystem.FileInfo;
-import com.astrodoorways.db.filesystem.BaseFileInfoDAO;
-import com.astrodoorways.db.filesystem.FileInfoDAO;
-import com.astrodoorways.db.filesystem.BaseFileStructureToDatabaseWriter;
+import java.io.File;
+import java.io.IOException;
+
+import static org.junit.Assert.assertTrue;
 
 @RunWith(JUnit4.class)
 public class FileStructureToDatabaseWriterTest {
@@ -18,11 +15,9 @@ public class FileStructureToDatabaseWriterTest {
 	@Test
 	public void test() {
 		FileInfo dto = new FileInfo();
-		FileInfoDAO dao = new BaseFileInfoDAO();
 		dto.setFileName("name");
 		dto.setDirectory("dir");
 		dto.setExtension("ext");
-		dao.saveFilePath(dto);
 	}
 
 	@Test

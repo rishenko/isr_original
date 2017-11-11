@@ -1,15 +1,12 @@
 package com.astrodoorways.db.filesystem;
 
-import org.hibernate.ScrollableResults;
+import org.springframework.data.repository.CrudRepository;
+import org.springframework.stereotype.Repository;
 
-import com.astrodoorways.db.DAO;
+import java.util.List;
 
-public interface FileInfoDAO extends DAO {
-
-	void saveFilePath(FileInfo fileStructureDto);
-
-	ScrollableResults searchByExample(FileInfo dto);
-
-	int retrieveFileInfoCountByJob(Job job);
-
+@Repository
+public interface FileInfoDAO extends CrudRepository<FileInfo,Long> {
+	int countByJob(Job job);
+	List<FileInfo> findByJob(Job job);
 }
