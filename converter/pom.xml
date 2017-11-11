@@ -5,10 +5,14 @@
     <artifactId>converter</artifactId>
     <version>0.2-SNAPSHOT</version>
 
+    <parent>
+        <groupId>com.astrodoorways</groupId>
+        <artifactId>ISR_Converter</artifactId>
+        <version>1.0.RELEASE</version>
+    </parent>
+
     <properties>
         <project.basedir>./</project.basedir>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
 
     <repositories>

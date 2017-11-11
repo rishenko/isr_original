@@ -5,6 +5,12 @@
 	<artifactId>vicar-source</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 
+	<parent>
+		<groupId>com.astrodoorways</groupId>
+		<artifactId>ISR_Converter</artifactId>
+		<version>1.0.RELEASE</version>
+	</parent>
+
 	<repositories>
 		<repository>
 			<id>maven-central</id>
@@ -36,10 +42,6 @@
 		<plugins>
 			<plugin>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<configuration>
-					<source>1.8</source>
-					<target>1.8</target>
-				</configuration>
 			</plugin>
 		</plugins>
 	</build>
@@ -94,7 +96,7 @@
 		<dependency>
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-classic</artifactId>
-			<version>1.0.13</version>
+			<version>${logback.version}</version>
 		</dependency>
 	</dependencies>
 </project>

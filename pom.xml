@@ -4,13 +4,17 @@
 
     <groupId>com.astrodoorways</groupId>
     <artifactId>ISR_Converter</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0.RELEASE</version>
     <packaging>pom</packaging>
     <name>ISR Converter</name>
 
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <junit.version>4.12</junit.version>
+        <spring.version>5.0.0.RELEASE</spring.version>
+        <logback.version>1.2.3</logback.version>
     </properties>
 
     <modules>
