@@ -273,7 +273,7 @@ public class Converter {
 					runnable.setSeqCount(count++);
 					runnable.setWriteDirectory(writeDirectory);
 					runnable.setJexifToolPool(jexifToolPool);
-					runnable.setType("tiff");
+					runnable.setType("TIFF");
 					runnable.setCounter(counter);
 					runnable.setMaxValue(metadataCount);
 					runnable.setFilePath(metadata.getFileInfo().getFilePath());

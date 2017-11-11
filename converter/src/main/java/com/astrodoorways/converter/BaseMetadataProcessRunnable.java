@@ -77,7 +77,7 @@ public class BaseMetadataProcessRunnable implements Runnable, MetadataProcessRun
 			filePath = fileInfo.getDirectory() + "/" + fileInfo.getFileName();
 			file = new File(filePath);
 		} else {
-			logger.debug("preprocessed file path: {}", fileInfo.getPreprocessedFileName());
+			logger.trace("preprocessed file path: {}", fileInfo.getPreprocessedFileName());
 			filePath = fileInfo.getPreprocessedFileName();
 			file = new File(fileInfo.getPreprocessedFileName());
 		}
@@ -87,13 +87,13 @@ public class BaseMetadataProcessRunnable implements Runnable, MetadataProcessRun
 		}
 
 		try {
-			logger.debug("creating new file from filepath");
+			logger.trace("creating new file from filepath");
 			final File fileFinal = new File(filePath);
 			if (!fileFinal.canRead()) {
 				logger.error("file cannot be found {}", filePath);
 				throw new RuntimeException("file cannot be found " + filePath);
 			}
-			logger.debug("going to read the image");
+			logger.trace("going to read the image");
 			readImage(fileFinal);
 		} catch (Exception e) {
 			//			if (e.getStackTrace() != null && e.getStackTrace().length > 0)
@@ -137,7 +137,7 @@ public class BaseMetadataProcessRunnable implements Runnable, MetadataProcessRun
 		metadataDAO.saveMetadata(metadata);
 		metadata.setFileInfo(fileInfo);
 		metadataDAO.saveMetadata(metadata);
-		logger.debug("Metadata: {} FileInfo: {}", metadata.getId(), fileInfo.getId());
+		logger.trace("Metadata: {} FileInfo: {}", metadata.getId(), fileInfo.getId());
 		logger.debug("finished processing metadata for {} - {}", filePath, completionMessage());
 	}
 
@@ -146,9 +146,9 @@ public class BaseMetadataProcessRunnable implements Runnable, MetadataProcessRun
 	 */
 	@Override
 	public void readImage(File file) throws IOException {
-		logger.debug("creating input stream");
+		logger.trace("creating input stream");
 		ImageInputStream stream = ImageIO.createImageInputStream(file);
-		logger.debug("getting image readers");
+		logger.trace("getting image readers");
 		Iterator<ImageReader> readers = (Iterator<ImageReader>) ImageIO.getImageReaders(stream);
 		if (!readers.hasNext()) {
 			logger.error("no image reader was found for {}", file.getAbsolutePath());
@@ -156,33 +156,33 @@ public class BaseMetadataProcessRunnable implements Runnable, MetadataProcessRun
 			throw new RuntimeException("no image reader was found for " + file.getAbsolutePath());
 		}
 
-		logger.debug("getting the first image reader");
+		logger.trace("getting the first image reader");
 		ImageReader reader = readers.next();
-		logger.debug("resetting the stream");
+		logger.trace("resetting the stream");
 		stream.reset();
 		try {
-			logger.debug("creating input stream");
+			logger.trace("creating input stream");
 			stream = ImageIO.createImageInputStream(file);
-			logger.debug("setting stream as input");
+			logger.trace("setting stream as input");
 			reader.setInput(stream);
-			logger.debug("getting image metadata from reader");
+			logger.trace("getting image metadata from reader");
 			metadata = reader.getImageMetadata(0);
 			if (metadata == null) {
 				logger.error("no metadata was found for {}", file);
 				throw new RuntimeException("no metadata was found for " + file.getAbsolutePath());
 			}
-			logger.debug("acquired the image metadata from the reader");
+			logger.trace("acquired the image metadata from the reader");
 		} catch (IOException e) {
-			logger.error("Hit an IOException");
+			logger.error("Hit an IOException", e);
 			throw e;
 		} finally {
-			logger.debug("disposing of reader");
+			logger.trace("disposing of reader");
 			reader.dispose();
 			try {
-				logger.debug("closing the stream because it hates the world");
+				logger.trace("closing the stream because it hates the world");
 				stream.close();
 			} catch (Exception e) {
-				logger.debug("the stream was already closed");
+				logger.error("the stream was already closed", e);
 			}
 		}
 	}

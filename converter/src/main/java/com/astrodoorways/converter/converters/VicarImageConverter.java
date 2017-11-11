@@ -284,7 +284,7 @@ public class VicarImageConverter {
 			try {
 				return calibrate(image);
 			} catch (Exception e) {
-				logger.error("calibration failed {}", e.getClass());
+				logger.error("calibration failed {}", e);
 			}
 		} else {
 			logger.trace("standard normalizing");
@@ -404,7 +404,7 @@ public class VicarImageConverter {
 		try {
 			Files.createParentDirs(new File(outputtedFilePath));
 		} catch (IOException e) {
-			logger.error("problem creating directory for {}", outputtedFilePath);
+			logger.error("problem creating directory for " + outputtedFilePath, e);
 			throw new RuntimeException("problem creating directory for " + outputtedFilePath, e);
 		}
 
@@ -413,8 +413,7 @@ public class VicarImageConverter {
 
 	/**
 	 * write the image
-	 * 
-	 * @param fileName
+	 *
 	 * @throws IOException
 	 */
 	public void writeImage(BufferedImage image, String outputtedFilePath) throws IOException {

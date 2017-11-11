@@ -8,7 +8,7 @@
         </encoder>
     </appender>
 
-    <logger name="com.astrodoorways" level="trace"/>
+    <logger name="com.astrodoorways.converter" level="debug"/>
 
     <root level="info">
         <appender-ref ref="STDOUT" />
