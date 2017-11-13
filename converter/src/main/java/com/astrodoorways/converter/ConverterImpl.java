@@ -37,7 +37,6 @@ import com.astrodoorways.db.imagery.MetadataDAO;
 import com.google.common.base.Strings;
 
 @Component("converter")
-@Transactional(propagation = Propagation.REQUIRES_NEW)
 public class ConverterImpl implements Converter {
 
 	private static final Logger logger = LoggerFactory.getLogger(ConverterImpl.class);
@@ -106,10 +105,10 @@ public class ConverterImpl implements Converter {
 		List<FileInfo> fileInfos = null;
 		Long jobId = ApplicationProperties.getPropertyAsLong(ApplicationProperties.JOB_ID);
 		if (jobId == null) {
-			fileStructureWriter.setJob(buildJob());
+			job = buildJob();
+			fileStructureWriter.setJob(job);
 			fileStructureWriter.writeFileStructure(new File(readDirectory));
 			fileInfos = fileStructureWriter.getFileInfos();
-			job = fileStructureWriter.getJob();
 			fileInfoDAO = fileStructureWriter.getFileInfoDAO();
 		} else {
 			job = jobDAO.findById(jobId).get();
@@ -133,6 +132,7 @@ public class ConverterImpl implements Converter {
 	/**
 	 * @return the built job
 	 */
+	@Transactional(propagation = Propagation.REQUIRES_NEW)
 	private Job buildJob() {
 		Job job = new Job();
 		job.setDate(new Date());
@@ -177,6 +177,7 @@ public class ConverterImpl implements Converter {
 
 	}
 
+	@Transactional(propagation = Propagation.REQUIRES_NEW)
 	private void preProcessImage(FileInfo fileInfo) throws IOException, InterruptedException {
 		String filePath = fileInfo.getDirectory() + "/" + fileInfo.getFileName();
 
@@ -233,6 +234,7 @@ public class ConverterImpl implements Converter {
 	 * @param numProcesses
 	 * @throws Exception
 	 */
+	@Transactional(propagation = Propagation.REQUIRES_NEW)
 	private void convertFiles(int numProcesses) throws Exception {
 		ObjectPool<JExifTool> jexifToolPool = new GenericObjectPool<JExifTool>(new JExifToolPoolableFactory(
 				writeDirectory + "/jexiftool-args"), numProcesses + 4);

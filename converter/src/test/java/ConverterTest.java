@@ -1,6 +1,7 @@
 import com.astrodoorways.converter.ApplicationProperties;
 import com.astrodoorways.converter.Converter;
 import com.astrodoorways.converter.ConverterImpl;
+import com.astrodoorways.converter.RunConverter;
 import com.astrodoorways.converter.vicar.cassini.DebiasCalibrator;
 import com.astrodoorways.converter.vicar.cassini.Lut8to12BitCalibrator;
 import com.astrodoorways.converter.vicar.cassini.TwoHzCalibrator;
@@ -11,7 +12,9 @@ import org.hibernate.cfg.Configuration;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.junit4.SpringRunner;
 
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
@@ -24,11 +27,12 @@ import java.util.List;
 
 import static org.junit.Assert.assertTrue;
 
-@RunWith(SpringJUnit4ClassRunner.class)
+@RunWith(SpringRunner.class)
+@SpringBootTest(classes = RunConverter.class)
 public class ConverterTest {
 
 	@Autowired
-	private Converter converter = null;
+	private Converter converter;
 
 	//	@Test(expected = IllegalArgumentException.class)
 	public void constructor() throws FileNotFoundException, IOException {
@@ -136,8 +140,8 @@ public class ConverterTest {
 
 	@Test
 	public void conversionCassiniNeedsCalibrated() throws Exception {
-		String readDir = "src/test/resources/test-dirs/read/data/cassini/needsCalib";
-		String writeDir = "src/test/resources/test-dirs/write/cassini/needsCalib";
+		String readDir = "./src/test/resources/test-dirs/read/data/cassini/needsCalib";
+		String writeDir = "./src/test/resources/test-dirs/write/data/cassini/needsCalib";
 		converter.setReadDirectory(readDir);
 		converter.setWriteDirectory(writeDir);
 		converter.beginConversion();

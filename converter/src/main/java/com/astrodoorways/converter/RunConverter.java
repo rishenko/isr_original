@@ -1,4 +1,4 @@
-package com.astrodoorways.converter.cli;
+package com.astrodoorways.converter;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

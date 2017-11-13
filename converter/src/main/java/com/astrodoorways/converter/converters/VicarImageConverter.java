@@ -128,6 +128,8 @@ public class VicarImageConverter {
 		int width = inputImage.getWidth();
 		int height = inputImage.getHeight();
 
+		logger.debug("w: {}, h: {}", width, height);
+
 		// base width initializations
 		int baseWidth = width;
 		int segmentCountByWidth = 1;

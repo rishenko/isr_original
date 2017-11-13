@@ -1,4 +1,4 @@
-package com.astrodoorways.converter.cli;
+package com.astrodoorways.converter;
 
 import com.astrodoorways.converter.ApplicationProperties;
 import com.astrodoorways.converter.Converter;
@@ -27,17 +27,15 @@ public class Runner implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) throws Exception {
         Properties properties = processProperties("RunConverter.properties");
-
         converter.setReadDirectory(properties.getProperty(ApplicationProperties.READ_DIRECTORY_PROPERTY));
         converter.setWriteDirectory(properties.getProperty(ApplicationProperties.WRITE_DIRECTORY_PROPERTY));
+
         try {
             converter.beginConversion();
         } catch (Exception e) {
-            logger.debug(e.getMessage());
-            for (StackTraceElement st : e.getStackTrace()) {
-                logger.debug(st.getClassName() + ":" + st.getLineNumber());
-            }
+            logger.error("something bad has risen to the top of the application", e);
         }
+
         logger.debug("The converter has finished. If the application is still running, feel free to kill it.");
     }
 
