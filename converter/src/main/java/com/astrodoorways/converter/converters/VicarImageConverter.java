@@ -128,102 +128,53 @@ public class VicarImageConverter {
 		int width = inputImage.getWidth();
 		int height = inputImage.getHeight();
 
-		logger.debug("w: {}, h: {}", width, height);
-
-		// base width initializations
-		int baseWidth = width;
-		int segmentCountByWidth = 1;
-		int remainderWidth = 0;
-		if (width > 5000) {
-			segmentCountByWidth = width / 5000;
-			baseWidth = 5000;
-			remainderWidth = width % 5000;
-		} else {
-			segmentCountByWidth = 1;
-			baseWidth = width;
-			remainderWidth = 0;
-		}
-
-		// base height initializations
-		int baseHeight = height;
-		int segmentCountByHeight = 1;
-		int remainderHeight = 0;
-		if (height > 5000) {
-			segmentCountByHeight = height / 5000;
-			baseHeight = 5000;
-			remainderHeight = height % 5000;
-		} else {
-			segmentCountByHeight = 1;
-			baseHeight = height;
-			remainderHeight = 0;
-		}
-
-		logger.debug(
-				"initial values: baseWidth: {}, segmented width count: {}, remainderWidth:{}, baseHeight: {}, segmented height count: {}, remainderHeight:{}",
-				new Object[] { baseWidth, segmentCountByWidth, remainderWidth, baseHeight, segmentCountByHeight,
-						remainderHeight });
+		logger.debug("!!! FILE w: {}, h: {}", width, height);
 
 		if (ApplicationProperties.getPropertyAsBoolean(ApplicationProperties.NORMALIZE)) {
-			logger.debug("find the the maximum light value for the image");
-			Raster raster = inputImage.getRaster();
-			for (int x = 0; x < width; x++) {
-				for (int y = 0; y < height; y++) {
-					double[] pixel = raster.getPixel(x, y, new double[1]);
-					if (pixel[0] > currentMaxPixel)
-						currentMaxPixel = pixel[0];
-				}
-			}
-			logger.debug("maximum light value: {}", currentMaxPixel);
+			normalize(inputImage, width, height);
 		}
 
-		// Begin working through segments
-		for (int w = 0; w <= segmentCountByWidth; w++) {
-			for (int h = 0; h <= segmentCountByHeight; h++) {
+		// initial image prep
+		SampleModel sampleModel = new PixelInterleavedSampleModel(DataBuffer.TYPE_FLOAT, width, height,
+				1, width, new int[1]);
+		ColorModel colorModel = new ComponentColorModel(ColorSpace.getInstance(ColorSpace.CS_GRAY), false,
+				false, Transparency.OPAQUE, DataBuffer.TYPE_FLOAT);
 
-				int tileWidth = baseWidth;
-				int tileHeight = baseHeight;
-				// final width, add remainder width
-				if (w == segmentCountByWidth)
-					tileWidth = remainderWidth;
-				if (h == segmentCountByHeight)
-					tileHeight = remainderHeight;
+		// build the output raster array and populate it
+		double[] outputRasterArray = new double[width * height];
+		outputRasterArray = inputImage.getRaster().getPixels(0, 0, width, height, outputRasterArray);
 
-				int x = w * baseWidth;
-				int y = h * baseHeight;
+		DataBuffer dataBuffer = new DataBufferDouble(outputRasterArray, outputRasterArray.length);
+		WritableRaster raster = Raster.createWritableRaster(sampleModel, dataBuffer, new Point(0, 0));
+		BufferedImage outputImage = new BufferedImage(colorModel, raster, false, null);
 
-				logger.debug("w:{}, h:{}, tileW:{}, tileH:{}, x:{}, y:{}", new Object[] { w, h, tileWidth, tileHeight,
-						x, y });
-				// initial image prep
-				SampleModel sampleModel = new PixelInterleavedSampleModel(DataBuffer.TYPE_FLOAT, tileWidth, tileHeight,
-						1, tileWidth, new int[1]);
-				ColorModel colorModel = new ComponentColorModel(ColorSpace.getInstance(ColorSpace.CS_GRAY), false,
-						false, Transparency.OPAQUE, DataBuffer.TYPE_FLOAT);
+		// post processing (calibration, normalizing, etc)
+		outputImage = postProcessImage(outputImage, valueMap);
 
-				// build the output raster array and populate it
-				double[] outputRasterArray = new double[tileWidth * tileHeight];
-				outputRasterArray = inputImage.getRaster().getPixels(x, y, tileWidth, tileHeight, outputRasterArray);
+		// write out image
+		String path = generateOutputFilePath(width, height);
+		logger.trace("generating output path");
+		// see if file already exists before trying to recreate
 
-				DataBuffer dataBuffer = new DataBufferDouble(outputRasterArray, outputRasterArray.length);
-				WritableRaster raster = Raster.createWritableRaster(sampleModel, dataBuffer, new Point(0, 0));
-				BufferedImage outputImage = new BufferedImage(colorModel, raster, false, null);
-
-				// post processing (calibration, normalizing, etc)
-				outputImage = postProcessImage(outputImage, valueMap);
-
-				// write out image
-				String path = generateOutputFilePath(w, h);
-				logger.trace("generating output path");
-				// see if file already exists before trying to recreate
-
-				// the image has already been created
-				if (new File(path).exists()) {
-					throw new IllegalStateException("image already exists: " + path);
-				}
-				writeImage(outputImage, path);
-				outputtedFilePaths.add(path);
-
-			}
+		// the image has already been created
+		if (new File(path).exists()) {
+			throw new IllegalStateException("image already exists: " + path);
 		}
+		writeImage(outputImage, path);
+		outputtedFilePaths.add(path);
+	}
+
+	private void normalize(BufferedImage inputImage, int width, int height) {
+		logger.debug("find the the maximum light value for the image");
+		Raster raster = inputImage.getRaster();
+		for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                double[] pixel = raster.getPixel(x, y, new double[1]);
+                if (pixel[0] > currentMaxPixel)
+                    currentMaxPixel = pixel[0];
+            }
+        }
+		logger.debug("maximum light value: {}", currentMaxPixel);
 	}
 
 	/**

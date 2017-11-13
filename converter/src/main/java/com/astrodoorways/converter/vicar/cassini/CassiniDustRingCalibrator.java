@@ -45,7 +45,7 @@ public class CassiniDustRingCalibrator extends AbstractBaseCalibrator {
 	}
 
 	public boolean removeDust(double[] imageArray, String nodeString, String sum) throws IOException {
-		File file = new File(calibrationDirectory + "/calib/dustring/nac_dustring_venus.img");
+		File file = new File(calibrationDirectory + "/calib/dustring/nac_dustring_1308947228.img"); // VENUS image
 		double[] dustCorrArray = readImageAsDoubleArray(file);
 
 		for (int i = 0; i < imageArray.length; i++) {

@@ -257,7 +257,7 @@ public class ConverterImpl implements Converter {
 			// 2) Query for all metadata by a single grouping
 			for (Metadata metadata : new HashSet<Metadata>(metadataDAO.findByFileInfoJob(job))) {
 				executorThrottleBasic(converterExecutor);
-				logger.debug("adding a task to convert the following: {}", metadata);
+				logger.debug("adding a task to convert the following in a sequence: {}", metadata);
 				ConvertRunnable runnable = context.getBean(ConvertRunnable.class);
 				runnable.setMetadata(metadata);
 				runnable.setSeqCount(count++);
