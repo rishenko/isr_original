@@ -156,7 +156,6 @@ public abstract class AbstractVicarHandler implements MetadataHandler {
 		try {
 			String time = convertVicarDateToTimestamp(getValueMap().get(TIME));
 			if (isSequencedFile()) {
-				logger.debug("sequence text: {}", getSequencedFileText());
 				String sequence = Sequencer.incrementAndGet(target, filter) + "";
 				sequence = "0000000000".substring(sequence.length()) + sequence;
 				fileName = target + "_" + filter + "_" + getSequencedFileText() + "_" + sequence;

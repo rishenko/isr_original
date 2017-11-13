@@ -170,7 +170,7 @@ public class Downloader {
 					logger.trace("about to inspect {} for action", filePath);
 					saveLink();
 				}
-			} catch (FileNotFoundException | InterruptedException e) {
+			} catch (FileNotFoundException e) {
 				logger.error("problem while trying to save a file", e);
 			}
 		}
@@ -192,14 +192,10 @@ public class Downloader {
 
 		/**
 		 * Process an individual link using information contained in the profile
-		 * 
-		 * @param profile
-		 * @param link
-		 * @throws InterruptedException 
+		 *
 		 * @throws IOException
 		 */
-		public void saveLink() throws InterruptedException {
-			sleepTask();
+		public void saveLink() {
 			// check to see if the file exists locally
 			String localFile = localUrl + "/" + filePath;
 
@@ -342,26 +338,6 @@ public class Downloader {
 				channel.close();
 				fos.close();
 				rbc.close();
-			}
-		}
-
-		public void sleepTask() throws InterruptedException {
-			int timeToSubtract = 250;
-			// see if the user passed in a percentage of system utilization value
-			if (System.getProperties().containsKey(SYSTEM_PERCENT_UTILIZATION)) {
-				int percentage = Integer.parseInt(System.getProperties().getProperty(SYSTEM_PERCENT_UTILIZATION));
-				if (percentage == 100) {
-					timeToSubtract = 0;
-				} else {
-					timeToSubtract = (int) (1000d * (percentage / 100d));
-				}
-				logger.trace("percentage for subtraction: {}", percentage);
-			}
-			logger.trace("time to subtract from 1000 milliseconds: {}", timeToSubtract);
-			// if the user did not specify 100% system utilization, calculate sleep time to match
-			if (timeToSubtract != 0) {
-				int millisToSleep = (int) (1000 - (timeToSubtract));
-				Thread.sleep(millisToSleep);
 			}
 		}
 	}

@@ -1,20 +1,13 @@
 package com.astrodoorways.converter;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Properties;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.apache.commons.pool.ObjectPool;
-import org.apache.commons.pool.impl.GenericObjectPool;
+import be.pw.jexif.JExifTool;
+import com.astrodoorways.converter.jexif.pool.JExifToolPoolableFactory;
+import com.astrodoorways.db.filesystem.*;
+import com.astrodoorways.db.imagery.Metadata;
+import com.astrodoorways.db.imagery.MetadataDAO;
+import com.google.common.base.Strings;
+import org.apache.commons.pool2.ObjectPool;
+import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,17 +17,12 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import be.pw.jexif.JExifTool;
-
-import com.astrodoorways.converter.jexif.pool.JExifToolPoolableFactory;
-import com.astrodoorways.db.filesystem.FileInfo;
-import com.astrodoorways.db.filesystem.FileInfoDAO;
-import com.astrodoorways.db.filesystem.FileStructureToDatabaseWriter;
-import com.astrodoorways.db.filesystem.Job;
-import com.astrodoorways.db.filesystem.JobDAO;
-import com.astrodoorways.db.imagery.Metadata;
-import com.astrodoorways.db.imagery.MetadataDAO;
-import com.google.common.base.Strings;
+import java.io.*;
+import java.util.Date;
+import java.util.List;
+import java.util.Properties;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Component("converter")
 public class ConverterImpl implements Converter {
@@ -105,11 +93,10 @@ public class ConverterImpl implements Converter {
 		List<FileInfo> fileInfos = null;
 		Long jobId = ApplicationProperties.getPropertyAsLong(ApplicationProperties.JOB_ID);
 		if (jobId == null) {
-			job = buildJob();
+			job = buildAndPersistJob();
 			fileStructureWriter.setJob(job);
 			fileStructureWriter.writeFileStructure(new File(readDirectory));
 			fileInfos = fileStructureWriter.getFileInfos();
-			fileInfoDAO = fileStructureWriter.getFileInfoDAO();
 		} else {
 			job = jobDAO.findById(jobId).get();
 			fileStructureWriter.setJob(job);
@@ -133,7 +120,7 @@ public class ConverterImpl implements Converter {
 	 * @return the built job
 	 */
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
-	private Job buildJob() {
+	private Job buildAndPersistJob() {
 		Job job = new Job();
 		job.setDate(new Date());
 		jobDAO.save(job);
@@ -172,9 +159,135 @@ public class ConverterImpl implements Converter {
 		// let the metadata processing tasks live while the converter processes
 		metadataExecutor.setWaitForTasksToCompleteOnShutdown(true);
 		metadataExecutor.shutdown();
-		while (!metadataExecutor.getThreadPoolExecutor().isTerminated()) {
+		while (!metadataExecutor.getThreadPoolExecutor().isTerminated()) {}
+
+	}
+
+	/**
+	 * Convert images using a number or threads
+	 * 
+	 * @param numProcesses
+	 * @throws Exception
+	 */
+	@Transactional(propagation = Propagation.REQUIRES_NEW)
+	private void convertFiles(int numProcesses) throws Exception {
+		ObjectPool<JExifTool> jexifToolPool = new GenericObjectPool<JExifTool>(new JExifToolPoolableFactory(
+				writeDirectory + "/jexiftool-args"));
+
+		// Convert all of the files according to the metadata in the database
+		AtomicInteger counter = new AtomicInteger();
+		int metadataCount = metadataDAO.countByFileInfoJob(job);
+		List<String> targets = ApplicationProperties.getPropertyAsStringList(ApplicationProperties.TARGET_LIST);
+		List<String> filters = ApplicationProperties.getPropertyAsStringList(ApplicationProperties.FILTER_LIST);
+
+		logger.debug("targets: {} filters: {} metadataCount: {}", new Object[]{targets, filters, metadataCount});
+		converterExecutor.setCorePoolSize(numProcesses);
+
+		int count = 0;
+		// MAIN TOPIC: retrieve the metadata, grouped by mission, target, filter 1, filter 2
+		// 1) Get a master set of objects representing the distinct groupings
+		// 2) Query for all metadata by a single grouping
+		for (Metadata metadata : metadataDAO.findByFileInfoJob(job)) {
+			executorThrottleBasic(converterExecutor);
+			logger.debug("adding sequence convert task: {}", metadata);
+			ConvertRunnable runnable = context.getBean(ConvertRunnable.class);
+			prepConvertRunnable(jexifToolPool, counter, metadataCount, metadata, runnable);
+			if (isSequence())
+				runnable.setSeqCount(count++);
+			converterExecutor.execute(runnable);
 		}
 
+		// let the thread live while the converter processes
+		converterExecutor.setWaitForTasksToCompleteOnShutdown(true);
+		converterExecutor.shutdown();
+		while (!converterExecutor.getThreadPoolExecutor().isTerminated()) {}
+
+		jexifToolPool.close();
+	}
+
+	private void prepConvertRunnable(ObjectPool<JExifTool> jexifToolPool, AtomicInteger counter, int metadataCount, Metadata metadata, ConvertRunnable runnable) {
+		runnable.setMetadata(metadata);
+		runnable.setWriteDirectory(writeDirectory);
+		runnable.setJexifToolPool(jexifToolPool);
+		runnable.setType("TIFF");
+		runnable.setCounter(counter);
+		runnable.setMaxValue(metadataCount);
+		runnable.setFilePath(metadata.getFileInfo().getFilePath());
+	}
+
+	@Override
+	public void executorThrottleBasic(ThreadPoolTaskExecutor executor) throws InterruptedException {
+		executorThrottle(executor, 1000, 1);
+	}
+
+	/**
+	 * Throttle the use of an executor
+	 * 
+	 * @param executor
+	 * @param count
+	 * @param sleepSeconds
+	 * @throws InterruptedException
+	 */
+	@Override
+	public void executorThrottle(ThreadPoolTaskExecutor executor, int count, int sleepSeconds)
+			throws InterruptedException {
+		BlockingQueue queue = executor.getThreadPoolExecutor().getQueue();
+		while (queue.size() > count) {
+			Thread.sleep(sleepSeconds * 1000);
+		}
+	}
+
+	/**
+	 * @return if the job should build a sequence of files or not
+	 */
+	private boolean isSequence() {
+		String seqStr = ApplicationProperties.getPropertyAsString(ApplicationProperties.SEQUENCE);
+		return seqStr != null && seqStr.trim().equals("");
+	}
+
+	/**
+	 * build a local directory structure
+	 * 
+	 * @param link
+	 */
+	private void buildLocalDirectoryStructure(String link) {
+		String dir = "";
+		for (String nextDir : link.split("/")) {
+			if (nextDir == null || nextDir.equals("")) {
+				dir += "/";
+				continue;
+			}
+
+			if (link.endsWith(nextDir)) {
+				break;
+			}
+
+			dir += nextDir + "/";
+			File tempFile = new File(dir);
+			if (!tempFile.canRead()) {
+				tempFile.mkdir();
+			}
+		}
+	}
+
+	@Override
+	public String getReadDirectory() {
+		return readDirectory;
+	}
+
+	@Override
+	public void setReadDirectory(String readDirectory) {
+		this.readDirectory = readDirectory;
+	}
+
+	@Override
+	public String getWriteDirectory() {
+		return writeDirectory;
+	}
+
+	@Override
+	public void setWriteDirectory(String writeDirectory) {
+		this.writeDirectory = writeDirectory;
 	}
 
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -226,175 +339,5 @@ public class ConverterImpl implements Converter {
 				fileInfoDAO.save(fileInfo);
 			}
 		}
-	}
-
-	/**
-	 * Convert images using a number or threads
-	 * 
-	 * @param numProcesses
-	 * @throws Exception
-	 */
-	@Transactional(propagation = Propagation.REQUIRES_NEW)
-	private void convertFiles(int numProcesses) throws Exception {
-		ObjectPool<JExifTool> jexifToolPool = new GenericObjectPool<JExifTool>(new JExifToolPoolableFactory(
-				writeDirectory + "/jexiftool-args"), numProcesses + 4);
-		AtomicInteger counter = new AtomicInteger();
-
-		// Convert all of the files according to the metadata in the database
-		counter = new AtomicInteger();
-		int metadataCount = metadataDAO.countByFileInfoJob(job);
-		List<String> targets = ApplicationProperties.getPropertyAsStringList(ApplicationProperties.TARGET_LIST);
-		List<String> filters = ApplicationProperties.getPropertyAsStringList(ApplicationProperties.FILTER_LIST);
-
-		logger.debug("targets: {} filters: {} metadataCount: {}", new Object[]{targets, filters, metadataCount});
-		converterExecutor.setCorePoolSize(numProcesses);
-
-		if (isSequence()) {
-			int count = 0;
-			// MAIN TOPIC: retrieve the metadata, grouped by mission, target, filter 1, filter 2
-			// 1) Get a master set of objects representing the distinct groupings
-
-			// 2) Query for all metadata by a single grouping
-			for (Metadata metadata : new HashSet<Metadata>(metadataDAO.findByFileInfoJob(job))) {
-				executorThrottleBasic(converterExecutor);
-				logger.debug("adding a task to convert the following in a sequence: {}", metadata);
-				ConvertRunnable runnable = context.getBean(ConvertRunnable.class);
-				runnable.setMetadata(metadata);
-				runnable.setSeqCount(count++);
-				runnable.setWriteDirectory(writeDirectory);
-				runnable.setJexifToolPool(jexifToolPool);
-				runnable.setType("TIFF");
-				runnable.setCounter(counter);
-				runnable.setMaxValue(metadataCount);
-				runnable.setFilePath(metadata.getFileInfo().getFilePath());
-				converterExecutor.execute(runnable);
-			}
-			// not generating sequences, so build the file names according to metadata
-		} else {
-			for (Metadata metadata: metadataDAO.findByFileInfoJob(job)) {
-				executorThrottleBasic(converterExecutor);
-				logger.debug("adding a task to convert the following: {}", metadata);
-				ConvertRunnable runnable = context.getBean(ConvertRunnable.class);
-				runnable.setMetadata(metadata);
-				runnable.setWriteDirectory(writeDirectory);
-				runnable.setJexifToolPool(jexifToolPool);
-				runnable.setType("tiff");
-				runnable.setCounter(counter);
-				runnable.setMaxValue(metadataCount);
-				runnable.setFilePath(metadata.getFileInfo().getFilePath());
-				converterExecutor.execute(runnable);
-			}
-		}
-
-		// let the thread live while the converter processes
-		converterExecutor.setWaitForTasksToCompleteOnShutdown(true);
-		converterExecutor.shutdown();
-		while (!converterExecutor.getThreadPoolExecutor().isTerminated()) {
-		}
-
-		jexifToolPool.close();
-	}
-
-	@Override
-	public void executorThrottleBasic(ThreadPoolTaskExecutor executor) throws InterruptedException {
-		executorThrottle(executor, 1000, 5);
-	}
-
-	/**
-	 * Throttle the use of an executor
-	 * 
-	 * @param executor
-	 * @param count
-	 * @param sleepSeconds
-	 * @throws InterruptedException
-	 */
-	@Override
-	public void executorThrottle(ThreadPoolTaskExecutor executor, int count, int sleepSeconds)
-			throws InterruptedException {
-		BlockingQueue queue = executor.getThreadPoolExecutor().getQueue();
-		while (queue.size() > count) {
-			Thread.sleep(sleepSeconds * 1000);
-		}
-	}
-
-	/**
-	 * @return if the job should build a sequence of files or not
-	 */
-	private boolean isSequence() {
-		String seqStr = ApplicationProperties.getPropertyAsString(ApplicationProperties.SEQUENCE);
-		return seqStr != null && seqStr.trim().equals("");
-	}
-
-	@Override
-	public void sleepTask() throws InterruptedException {
-		int timeToSubtract = 250;
-		// see if the user passed in a percentage of system utilization value
-		Integer percentage = ApplicationProperties
-				.getPropertyAsInteger(ApplicationProperties.SYSTEM_PERCENT_UTILIZATION);
-		if (percentage != null) {
-			if (percentage == 100) {
-				timeToSubtract = 0;
-			} else {
-				double finalPercent = percentage / 100d;
-				double firstPercentage = 1000d * finalPercent;
-				double secondPercentage = 100d * finalPercent;
-				if ((firstPercentage + secondPercentage) < 1000)
-					timeToSubtract = (int) (firstPercentage + secondPercentage);
-				else
-					timeToSubtract = 995;
-			}
-			logger.trace("percentage for subtraction: {}", percentage);
-		}
-		logger.trace("time to subtract from 1000 milliseconds: {}", timeToSubtract);
-		// if the user did not specify 100% system utilization, calculate sleep time to match
-		if (timeToSubtract != 0) {
-			int millisToSleep = (int) (1000 - (timeToSubtract));
-			Thread.sleep(millisToSleep);
-		}
-	}
-
-	/**
-	 * build a local directory structure
-	 * 
-	 * @param link
-	 */
-	private void buildLocalDirectoryStructure(String link) {
-		String dir = "";
-		for (String nextDir : link.split("/")) {
-			if (nextDir == null || nextDir.equals("")) {
-				dir += "/";
-				continue;
-			}
-
-			if (link.endsWith(nextDir)) {
-				break;
-			}
-
-			dir += nextDir + "/";
-			File tempFile = new File(dir);
-			if (!tempFile.canRead()) {
-				tempFile.mkdir();
-			}
-		}
-	}
-
-	@Override
-	public String getReadDirectory() {
-		return readDirectory;
-	}
-
-	@Override
-	public void setReadDirectory(String readDirectory) {
-		this.readDirectory = readDirectory;
-	}
-
-	@Override
-	public String getWriteDirectory() {
-		return writeDirectory;
-	}
-
-	@Override
-	public void setWriteDirectory(String writeDirectory) {
-		this.writeDirectory = writeDirectory;
 	}
 }

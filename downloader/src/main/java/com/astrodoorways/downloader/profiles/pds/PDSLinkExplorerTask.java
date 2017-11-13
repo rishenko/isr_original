@@ -57,7 +57,6 @@ public class PDSLinkExplorerTask extends RecursiveTask<String> {
 	@SuppressWarnings("unchecked")
 	public void recursiveLinkExplorer(String link) throws FailingHttpStatusCodeException, MalformedURLException,
 			IOException, NumberFormatException, InterruptedException {
-		sleepTask();
 		if (link.endsWith("/") && directoryPreviouslyMapped(link)) {
 			return;
 		}
@@ -145,26 +144,5 @@ public class PDSLinkExplorerTask extends RecursiveTask<String> {
 
 	public LinesToFileWriter getPathGenerator() {
 		return pathGenerator;
-	}
-
-	public void sleepTask() throws InterruptedException {
-		int timeToSubtract = 250;
-		// see if the user passed in a percentage of system utilization value
-		if (System.getProperties().containsKey(SYSTEM_PERCENT_UTILIZATION)) {
-			int percentage = Integer.parseInt(System.getProperties().getProperty(SYSTEM_PERCENT_UTILIZATION));
-			if (percentage == 100) {
-				timeToSubtract = 0;
-			} else {
-				timeToSubtract = (int) (1000d * (percentage / 100d));
-			}
-			logger.trace("percentage for subtraction: {}", percentage);
-		}
-		logger.trace("time to subtract from 1000 milliseconds: {}", timeToSubtract);
-
-		// if the user did not specify 100% system utilization, calculate sleep time to match
-		if (timeToSubtract != 0) {
-			int millisToSleep = (int) (1000 - (timeToSubtract));
-			Thread.sleep(millisToSleep);
-		}
 	}
 }

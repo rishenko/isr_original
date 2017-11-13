@@ -99,7 +99,5 @@ public class FileInfo {
 		return getDirectory() + "/" + getFileName();
 	}
 
-	public String toString() {
-		return getFilePath() + "::" + getPreprocessedFileName();
-	}
+	public String toString() { return getFileName(); }
 }

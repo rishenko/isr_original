@@ -481,11 +481,6 @@ public class BufferedDataInputStream extends BufferedInputStream implements Arra
 			for (int i = 0; i < ((Object[]) o).length; i += 1) {
 				primitiveArrayRecurse(((Object[]) o)[i]);
 			}
-			try {
-				sleepTask();
-			} catch (InterruptedException e) {
-				logger.error("trouble during sleeping the task");
-			}
 		} else {
 
 			// This is a one-d array. Process it using our special functions.
@@ -769,31 +764,5 @@ public class BufferedDataInputStream extends BufferedInputStream implements Arra
 	/** Represent the stream as a string */
 	public String toString() {
 		return super.toString() + "[count=" + count + ",pos=" + pos + "]";
-	}
-
-	public void sleepTask() throws InterruptedException {
-		int timeToSubtract = 990;
-		// see if the user passed in a percentage of system utilization value
-		if (System.getProperties().containsKey(SYSTEM_PERCENT_UTILIZATION)) {
-			int percentage = Integer.parseInt(System.getProperties().getProperty(SYSTEM_PERCENT_UTILIZATION));
-			if (percentage == 100) {
-				timeToSubtract = 1000;
-			} else {
-				double finalPercent = percentage / 100d;
-				double firstPercentage = 1000d * finalPercent;
-				double secondPercentage = 100d * finalPercent;
-				if ((firstPercentage + secondPercentage) < 1000)
-					timeToSubtract = (int) (firstPercentage + secondPercentage);
-				else
-					timeToSubtract = 995;
-			}
-			logger.trace("percentage for subtraction: {}", percentage);
-		}
-		logger.trace("time to subtract from 1000 milliseconds: {}", timeToSubtract);
-		// if the user did not specify 100% system utilization, calculate sleep time to match
-		if (timeToSubtract != 0) {
-			int millisToSleep = (int) (1000 - (timeToSubtract));
-			Thread.sleep(millisToSleep);
-		}
 	}
 }

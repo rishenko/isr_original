@@ -1,25 +1,24 @@
 package com.astrodoorways.converter.jexif.pool;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.Properties;
-import java.util.UUID;
-
+import be.pw.jexif.JExifTool;
+import be.pw.jexif.internal.constants.ExecutionConstant;
 import com.google.common.base.Strings;
-import org.apache.commons.pool.PoolableObjectFactory;
+import org.apache.commons.pool2.BasePooledObjectFactory;
+import org.apache.commons.pool2.PooledObject;
+import org.apache.commons.pool2.impl.DefaultPooledObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import be.pw.jexif.JExifTool;
-import be.pw.jexif.internal.constants.ExecutionConstant;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.Properties;
 
-public class JExifToolPoolableFactory implements PoolableObjectFactory<JExifTool> {
+public class JExifToolPoolableFactory extends BasePooledObjectFactory<JExifTool> {
 
 	private static Logger logger = LoggerFactory.getLogger(JExifToolPoolableFactory.class);
 
-	public JExifToolPoolableFactory(String argsFileDirectory) throws FileNotFoundException, IOException {
+	public JExifToolPoolableFactory(String argsFileDirectory) throws IOException {
 		if (Strings.isNullOrEmpty(argsFileDirectory)) {
 			throw new IllegalArgumentException("the directory housing the exiftool args file cannot be null");
 		}
@@ -36,29 +35,13 @@ public class JExifToolPoolableFactory implements PoolableObjectFactory<JExifTool
 	}
 
 	@Override
-	public JExifTool makeObject() throws Exception {
-		logger.debug("return a new instance of JExifTool");
+	public JExifTool create() throws Exception {
+		logger.trace("creating new JExif object");
 		return new JExifTool();
 	}
 
 	@Override
-	public void destroyObject(JExifTool obj) throws Exception {
-		logger.debug("stopping an instance of JExifTool");
-		obj.stop();
-	}
-
-	@Override
-	public boolean validateObject(JExifTool obj) {
-		return true;
-	}
-
-	@Override
-	public void activateObject(JExifTool obj) throws Exception {
-		// do nothing
-	}
-
-	@Override
-	public void passivateObject(JExifTool obj) throws Exception {
-		// do nothing
+	public PooledObject<JExifTool> wrap(JExifTool jExifTool) {
+		return new DefaultPooledObject<>(jExifTool);
 	}
 }

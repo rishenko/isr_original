@@ -1,9 +1,20 @@
 package com.astrodoorways.converter;
 
-import java.io.BufferedReader;
+import be.pw.jexif.JExifTool;
+import com.astrodoorways.converter.converters.VicarImageConverter;
+import com.astrodoorways.converter.vicar.exif.VicarThreadedJEXIFConverter;
+import com.astrodoorways.db.filesystem.FileInfo;
+import com.astrodoorways.db.filesystem.FileInfoDAO;
+import com.astrodoorways.db.imagery.Metadata;
+import org.apache.commons.pool2.ObjectPool;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
+
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
@@ -11,21 +22,6 @@ import java.util.Date;
 import java.util.EmptyStackException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.apache.commons.pool.ObjectPool;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Component;
-
-import be.pw.jexif.JExifTool;
-
-import com.astrodoorways.converter.converters.VicarImageConverter;
-import com.astrodoorways.converter.vicar.exif.VicarThreadedJEXIFConverter;
-import com.astrodoorways.db.filesystem.FileInfo;
-import com.astrodoorways.db.filesystem.FileInfoDAO;
-import com.astrodoorways.db.imagery.Metadata;
 
 @Component
 @Scope("prototype")
@@ -48,9 +44,6 @@ public class ConvertRunnable implements Runnable {
 	private static final long maxFileSizeForExif = 8 * 1024 * 1024 * 100; // byte * kilobyte * megabyte * #megabytes
 	private static final List<String> ACCEPTED_EXTENSIONS = Arrays.asList("IMG", "TIFF", "tiff", "FIT", "FITS", "img",
 			"fits", "fit");
-
-	public static final String SYSTEM_PERCENT_UTILIZATION = "system.percent.utilization";
-	public static final String MAX_NUM_PROCESSORS = "max.num.processors";
 
 	public ConvertRunnable() {
 	}
@@ -85,24 +78,18 @@ public class ConvertRunnable implements Runnable {
 		}
 		JExifTool tool = null;
 		try {
-			logger.debug("about to convert image {} to type {}", new Object[] { metadata.getFileInfo(), type });
+			logger.trace("about to convert image {} to type {}", metadata.getFileInfo(), type);
 			VicarImageConverter converter = new VicarImageConverter(metadata, seqCount, writeDirectory, type, counter);
 			converter.convert();
-			sleepTask();
 
-			logger.debug("converted image {}", converter.getOutputtedFilePaths().toArray());
+			logger.trace("converted image {}", converter.getOutputtedFilePaths().toArray());
 			// exif is an expensive operation, only use on smaller files, add override somehow
 			if (new File(getOutputFilePath()).length() < maxFileSizeForExif) {
 				tool = jexifToolPool.borrowObject();
 				VicarThreadedJEXIFConverter exifConverter = new VicarThreadedJEXIFConverter(tool);
 				for (String path : converter.getOutputtedFilePaths()) {
 					exifConverter.convert(path, converter.getIIOMetaData());
-					logger.debug("successful exif conversion for {}", path);
-
-					logger.debug("successful conversion of {} to {} - metadata: {} - {}",
-							new Object[] { metadata.getFileInfo(), path, metadata, completionMessage() });
 				}
-				sleepTask();
 			}
 
 			updateMetadata(converter.getOutputtedFilePaths());
@@ -110,7 +97,7 @@ public class ConvertRunnable implements Runnable {
 		} catch (IllegalStateException e) {
 			String msg = e.getMessage();
 			if (msg.contains("image already exists")) {
-				logger.debug("{} - {}", new Object[] { msg, completionMessage() });
+				logger.debug("{} - {}", msg, completionMessage());
 				return;
 			} else {
 				logger.error("unknown state exception error", e);
@@ -149,32 +136,6 @@ public class ConvertRunnable implements Runnable {
 		fileInfoDAO.save(fileInfo);
 	}
 
-	private void preProcessImage() throws IOException, InterruptedException {
-		if (filePath.endsWith(".fits")) {
-			// rename fits file to fz to try and unpack, just in case
-			String newFilePath = filePath.substring(0, filePath.length() - 4) + "fz";
-			new File(filePath).renameTo(new File(newFilePath));
-			filePath = newFilePath;
-		}
-
-		if (filePath.endsWith(".fz")) {
-			String newFilePath = filePath.substring(0, filePath.length() - 2) + "fits";
-			ProcessBuilder builder = new ProcessBuilder("funpack", "-O", newFilePath, filePath);
-			builder.redirectErrorStream(true);
-			Process process = builder.start();
-
-			BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-			String line = "";
-			while ((line = reader.readLine()) != null) {
-				logger.debug("process output: {}", line);
-			}
-			if (process.waitFor() != 0)
-				logger.debug("funpack process returned an error");
-			process.destroy();
-			this.filePath = newFilePath;
-		}
-	}
-
 	private void postProcessImage() {
 		if (filePath.endsWith(".fits")) {
 			String fzFilePath = filePath.substring(0, filePath.length() - 4) + "fz";
@@ -191,30 +152,6 @@ public class ConvertRunnable implements Runnable {
 		int percentComplete = (int) (((double) counterVal / (double) maxValue) * 100.0);
 		return String.format("converter is %d%% complete with %d out of %d processed", percentComplete, counterVal,
 				maxValue);
-	}
-
-	public void sleepTask() throws InterruptedException {
-		int timeToSubtract = 250;
-		// see if the user passed in a percentage of system utilization value
-		if (System.getProperties().containsKey(SYSTEM_PERCENT_UTILIZATION)) {
-			int percentage = Integer.parseInt(System.getProperties().getProperty(SYSTEM_PERCENT_UTILIZATION));
-			if (percentage == 100) {
-				timeToSubtract = 0;
-			} else {
-				double finalPercent = percentage / 100d;
-				double firstPercentage = 1000d * finalPercent;
-				double secondPercentage = 100d * finalPercent;
-				if ((firstPercentage + secondPercentage) < 1000)
-					timeToSubtract = (int) (firstPercentage + secondPercentage);
-				else
-					timeToSubtract = 995;
-			}
-		}
-		// if the user did not specify 100% system utilization, calculate sleep time to match
-		if (timeToSubtract != 0) {
-			int millisToSleep = (int) (1000 - (timeToSubtract));
-			Thread.sleep(millisToSleep);
-		}
 	}
 
 	public Metadata getMetadata() {

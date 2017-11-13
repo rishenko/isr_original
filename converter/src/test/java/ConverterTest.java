@@ -152,7 +152,8 @@ public class ConverterTest {
 		System.getProperties().setProperty(ApplicationProperties.SEQUENCE, "2012_CASS_TEST");
 		String readDir = "src/test/resources/test-dirs/read/data/cassini/calibrated/";
 		String writeDir = "src/test/resources/test-dirs/write/cassini/calibrated";
-		Converter converter = new ConverterImpl(readDir, writeDir);
+		converter.setReadDirectory(readDir);
+		converter.setWriteDirectory(writeDir);
 		converter.beginConversion();
 	}
 

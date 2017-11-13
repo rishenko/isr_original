@@ -1,17 +1,19 @@
 package com.astrodoorways.converter.jexif.pool;
 
-import java.lang.ProcessBuilder.Redirect;
-
-import org.apache.commons.pool.PoolableObjectFactory;
+import org.apache.commons.pool2.BasePooledObjectFactory;
+import org.apache.commons.pool2.PooledObject;
+import org.apache.commons.pool2.impl.DefaultPooledObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ProcessPoolableFactory implements PoolableObjectFactory<Process> {
+import java.lang.ProcessBuilder.Redirect;
+
+public class ProcessPoolableFactory extends BasePooledObjectFactory<Process> {
 
 	private static Logger logger = LoggerFactory.getLogger(ProcessPoolableFactory.class);
 
 	@Override
-	public Process makeObject() throws Exception {
+	public Process create() throws Exception {
 		ProcessBuilder builder = new ProcessBuilder();
 		builder.redirectError(Redirect.INHERIT);
 		// I am being lazy, but really the InputStream is where
@@ -24,23 +26,7 @@ public class ProcessPoolableFactory implements PoolableObjectFactory<Process> {
 	}
 
 	@Override
-	public void destroyObject(Process obj) throws Exception {
-		logger.debug("stopping an instance of Process");
-		obj.destroy();
-	}
-
-	@Override
-	public boolean validateObject(Process obj) {
-		return true;
-	}
-
-	@Override
-	public void activateObject(Process obj) throws Exception {
-		// do nothing
-	}
-
-	@Override
-	public void passivateObject(Process obj) throws Exception {
-		// do nothing
+	public PooledObject<Process> wrap(Process process) {
+		return new DefaultPooledObject<>(process);
 	}
 }

@@ -96,7 +96,7 @@ public class BitweightCalibrator extends AbstractBaseCalibrator {
 		BufferedReader reader = new BufferedReader(new FileReader(btwFile));
 		String line = "";
 		boolean markFound = false;
-		List<Double> bitweightData = new ArrayList<Double>();
+		List<Double> bitweightData = new ArrayList<>();
 		while ((line = reader.readLine()) != null) {
 			if (markFound == false && !line.trim().equals("\\begindata")) {
 				continue;
