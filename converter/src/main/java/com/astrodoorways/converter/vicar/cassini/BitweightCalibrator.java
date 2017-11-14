@@ -1,5 +1,9 @@
 package com.astrodoorways.converter.vicar.cassini;
 
+import com.astrodoorways.converter.converters.VicarImageConverter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -11,6 +15,8 @@ import java.util.List;
 import javax.imageio.metadata.IIOMetadata;
 
 public class BitweightCalibrator extends AbstractBaseCalibrator {
+
+	Logger logger = LoggerFactory.getLogger(BitweightCalibrator.class);
 
 	private final String calibrationDirectory;
 
@@ -91,32 +97,37 @@ public class BitweightCalibrator extends AbstractBaseCalibrator {
 
 		fname += "_bwt.tab";
 
-		// build bitweight table;
-		File btwFile = new File(calibrationDirectory + "/calib/bitweight/" + fname);
-		BufferedReader reader = new BufferedReader(new FileReader(btwFile));
-		String line = "";
-		boolean markFound = false;
-		List<Double> bitweightData = new ArrayList<>();
-		while ((line = reader.readLine()) != null) {
-			if (markFound == false && !line.trim().equals("\\begindata")) {
-				continue;
-			} else if (markFound == false && line.trim().equals("\\begindata")) {
-				markFound = true;
-				continue;
+		try {
+			// build bitweight table;
+			File btwFile = new File(calibrationDirectory + "/calib/bitweight/" + fname);
+			BufferedReader reader = new BufferedReader(new FileReader(btwFile));
+			String line = "";
+			boolean markFound = false;
+			List<Double> bitweightData = new ArrayList<>();
+			while ((line = reader.readLine()) != null) {
+				if (markFound == false && !line.trim().equals("\\begindata")) {
+					continue;
+				} else if (markFound == false && line.trim().equals("\\begindata")) {
+					markFound = true;
+					continue;
+				}
+				String[] values = null;
+				if (line.indexOf(",") != -1)
+					values = line.trim().split(",");
+				else
+					values = line.trim().split(" ");
+				for (String strVal : values) {
+					bitweightData.add(Double.parseDouble(strVal));
+				}
 			}
-			String[] values = null;
-			if (line.indexOf(",") != -1)
-				values = line.trim().split(",");
-			else
-				values = line.trim().split(" ");
-			for (String strVal : values) {
-				bitweightData.add(Double.parseDouble(strVal));
-			}
-		}
-		reader.close();
+			reader.close();
 
-		for (int i = 0; i < imageArray.length; i++) {
-			imageArray[i] = bitweightData.get((int) imageArray[i]);
+			for (int i = 0; i < imageArray.length; i++) {
+				imageArray[i] = bitweightData.get((int) imageArray[i]);
+			}
+		} catch (IndexOutOfBoundsException e) {
+			logger.error("array out of bounds for " + fname, e);
+			throw e;
 		}
 
 		return true;

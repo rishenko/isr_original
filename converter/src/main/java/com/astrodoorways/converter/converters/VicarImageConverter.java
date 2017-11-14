@@ -210,7 +210,7 @@ public class VicarImageConverter {
             try {
                 return calibrate(image);
             } catch (Exception e) {
-                logger.error("calibration failed {}", e);
+                logger.error("calibration failed", e);
             }
         } else {
             logger.trace("standard normalizing");
