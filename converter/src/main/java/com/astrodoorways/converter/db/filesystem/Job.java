@@ -1,4 +1,4 @@
-package com.astrodoorways.db.filesystem;
+package com.astrodoorways.converter.db.filesystem;
 
 import javax.persistence.*;
 import java.util.ArrayList;

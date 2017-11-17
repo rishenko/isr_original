@@ -1,49 +1,32 @@
 package com.astrodoorways.converter.converters;
 
-import java.awt.Point;
-import java.awt.Transparency;
+import com.astrodoorways.converter.ApplicationProperties;
+import com.astrodoorways.converter.metadata.processor.MetadataProcessor;
+import com.astrodoorways.converter.vicar.cassini.*;
+import com.astrodoorways.converter.db.imagery.Metadata;
+import com.google.common.io.Files;
+import com.tomgibara.imageio.impl.tiff.TIFFLZWCompressor;
+import com.tomgibara.imageio.tiff.TIFFCompressor;
+import com.tomgibara.imageio.tiff.TIFFImageWriteParam;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.imageio.IIOImage;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.ImageWriter;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.stream.ImageOutputStream;
+import java.awt.*;
 import java.awt.color.ColorSpace;
-import java.awt.image.BufferedImage;
-import java.awt.image.ColorModel;
-import java.awt.image.ComponentColorModel;
-import java.awt.image.DataBuffer;
-import java.awt.image.DataBufferDouble;
-import java.awt.image.PixelInterleavedSampleModel;
-import java.awt.image.Raster;
-import java.awt.image.RenderedImage;
-import java.awt.image.RescaleOp;
-import java.awt.image.SampleModel;
-import java.awt.image.WritableRaster;
+import java.awt.image.*;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteOrder;
 import java.text.ParseException;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import javax.imageio.IIOImage;
-import javax.imageio.ImageIO;
-import javax.imageio.ImageReader;
-import javax.imageio.ImageWriteParam;
-import javax.imageio.ImageWriter;
-import javax.imageio.metadata.IIOMetadata;
-import javax.imageio.stream.ImageOutputStream;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.astrodoorways.converter.ApplicationProperties;
-import com.astrodoorways.converter.metadata.processor.MetadataProcessor;
-import com.astrodoorways.converter.vicar.cassini.BitweightCalibrator;
-import com.astrodoorways.converter.vicar.cassini.CassiniDustRingCalibrator;
-import com.astrodoorways.converter.vicar.cassini.DebiasCalibrator;
-import com.astrodoorways.converter.vicar.cassini.DivideByFlatsCalibrator;
-import com.astrodoorways.converter.vicar.cassini.Lut8to12BitCalibrator;
-import com.astrodoorways.db.imagery.Metadata;
-import com.google.common.io.Files;
-import com.tomgibara.imageio.impl.tiff.TIFFLZWCompressor;
-import com.tomgibara.imageio.tiff.TIFFCompressor;
-import com.tomgibara.imageio.tiff.TIFFImageWriteParam;
 
 /**
  * Convert a Vicar/PDS formatted image into another image format.

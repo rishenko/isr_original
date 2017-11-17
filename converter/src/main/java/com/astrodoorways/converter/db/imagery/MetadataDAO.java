@@ -1,6 +1,6 @@
-package com.astrodoorways.db.imagery;
+package com.astrodoorways.converter.db.imagery;
 
-import com.astrodoorways.db.filesystem.Job;
+import com.astrodoorways.converter.db.filesystem.Job;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

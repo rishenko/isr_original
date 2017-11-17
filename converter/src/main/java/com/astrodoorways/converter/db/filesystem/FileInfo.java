@@ -1,4 +1,4 @@
-package com.astrodoorways.db.filesystem;
+package com.astrodoorways.converter.db.filesystem;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,7 +12,7 @@ import javax.persistence.ManyToOne;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Transient;
 
-import com.astrodoorways.db.imagery.Metadata;
+import com.astrodoorways.converter.db.imagery.Metadata;
 
 @Entity(name = "file_structure")
 public class FileInfo {

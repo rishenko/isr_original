@@ -2,12 +2,13 @@ package com.astrodoorways.converter;
 
 import be.pw.jexif.JExifTool;
 import com.astrodoorways.converter.jexif.pool.JExifToolPoolableFactory;
-import com.astrodoorways.db.filesystem.*;
-import com.astrodoorways.db.imagery.Metadata;
-import com.astrodoorways.db.imagery.MetadataDAO;
+import com.astrodoorways.converter.db.filesystem.*;
+import com.astrodoorways.converter.db.imagery.Metadata;
+import com.astrodoorways.converter.db.imagery.MetadataDAO;
 import com.google.common.base.Strings;
 import org.apache.commons.pool2.ObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPool;
+import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -140,7 +141,7 @@ public class ConverterImpl implements Converter {
 			InterruptedException {
 		AtomicInteger counter = new AtomicInteger();
 		// Build the metadata for each of the files
-		metadataExecutor.setCorePoolSize(numProcesses);
+		metadataExecutor.setCorePoolSize(1); // numProcesses
 		int fileInfoCount = fileInfoDAO.countByJob(job);
 		for (FileInfo fileInfo: fileInfos) {
 			executorThrottleBasic(metadataExecutor);
@@ -171,7 +172,9 @@ public class ConverterImpl implements Converter {
 	 */
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
 	private void convertFiles(int numProcesses) throws Exception {
-		ObjectPool<JExifTool> jexifToolPool = new GenericObjectPool<JExifTool>(new JExifToolPoolableFactory(
+		GenericObjectPoolConfig config = new GenericObjectPoolConfig();
+		config.setMaxTotal(1);
+		ObjectPool<JExifTool> jexifToolPool = new GenericObjectPool<>(new JExifToolPoolableFactory(
 				writeDirectory + "/jexiftool-args"));
 
 		// Convert all of the files according to the metadata in the database
@@ -180,13 +183,10 @@ public class ConverterImpl implements Converter {
 		List<String> targets = ApplicationProperties.getPropertyAsStringList(ApplicationProperties.TARGET_LIST);
 		List<String> filters = ApplicationProperties.getPropertyAsStringList(ApplicationProperties.FILTER_LIST);
 
-		logger.debug("targets: {} filters: {} metadataCount: {}", new Object[]{targets, filters, metadataCount});
+		logger.debug("targets: {} filters: {} metadataCount: {}", targets, filters, metadataCount);
 		converterExecutor.setCorePoolSize(numProcesses);
 
 		int count = 0;
-		// MAIN TOPIC: retrieve the metadata, grouped by mission, target, filter 1, filter 2
-		// 1) Get a master set of objects representing the distinct groupings
-		// 2) Query for all metadata by a single grouping
 		for (Metadata metadata : metadataDAO.findByFileInfoJob(job)) {
 			executorThrottleBasic(converterExecutor);
 			logger.debug("adding sequence convert task: {}", metadata);
@@ -325,7 +325,7 @@ public class ConverterImpl implements Converter {
 			builder.redirectErrorStream(true);
 			Process process = builder.start();
 			BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-			String line = "";
+			String line;
 			while ((line = reader.readLine()) != null) {
 				logger.debug("funpack output: {}", line);
 			}

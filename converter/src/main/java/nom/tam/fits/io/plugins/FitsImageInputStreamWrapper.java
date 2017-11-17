@@ -26,8 +26,7 @@ public class FitsImageInputStreamWrapper extends InputStream {
 		try {
 			return stream.readUnsignedByte();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			logger.error("problem reading fits stream", e);
 		}
 
 		return -1;

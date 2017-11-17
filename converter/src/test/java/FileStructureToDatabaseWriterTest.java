@@ -1,5 +1,5 @@
-import com.astrodoorways.db.filesystem.BaseFileStructureToDatabaseWriter;
-import com.astrodoorways.db.filesystem.FileInfo;
+import com.astrodoorways.converter.db.filesystem.BaseFileStructureToDatabaseWriter;
+import com.astrodoorways.converter.db.filesystem.FileInfo;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;

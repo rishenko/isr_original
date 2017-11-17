@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -14,7 +13,6 @@ import javax.imageio.ImageReader;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.stream.ImageInputStream;
 
-import org.hibernate.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,11 +23,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.astrodoorways.converter.metadata.handler.MetadataHandler;
 import com.astrodoorways.converter.metadata.processor.MetadataProcessor;
-import com.astrodoorways.db.filesystem.FileInfo;
-import com.astrodoorways.db.filesystem.FileInfoDAO;
-import com.astrodoorways.db.filesystem.Job;
-import com.astrodoorways.db.imagery.Metadata;
-import com.astrodoorways.db.imagery.MetadataDAO;
+import com.astrodoorways.converter.db.filesystem.FileInfo;
+import com.astrodoorways.converter.db.filesystem.FileInfoDAO;
+import com.astrodoorways.converter.db.filesystem.Job;
+import com.astrodoorways.converter.db.imagery.Metadata;
+import com.astrodoorways.converter.db.imagery.MetadataDAO;
 
 @Component
 @Scope("prototype")
@@ -200,7 +198,7 @@ public class BaseMetadataProcessRunnable implements Runnable, MetadataProcessRun
 	}
 
 	/* (non-Javadoc)
-	 * @see com.astrodoorways.converter.MetadataProcessRunnable#setFileInfo(com.astrodoorways.db.filesystem.FileInfo)
+	 * @see com.astrodoorways.converter.MetadataProcessRunnable#setFileInfo(com.astrodoorways.converter.db.filesystem.FileInfo)
 	 */
 	@Override
 	public void setFileInfo(FileInfo fileInfo) {
@@ -216,7 +214,7 @@ public class BaseMetadataProcessRunnable implements Runnable, MetadataProcessRun
 	}
 
 	/* (non-Javadoc)
-	 * @see com.astrodoorways.converter.MetadataProcessRunnable#setJob(com.astrodoorways.db.filesystem.Job)
+	 * @see com.astrodoorways.converter.MetadataProcessRunnable#setJob(com.astrodoorways.converter.db.filesystem.Job)
 	 */
 	@Override
 	public void setJob(Job job) {

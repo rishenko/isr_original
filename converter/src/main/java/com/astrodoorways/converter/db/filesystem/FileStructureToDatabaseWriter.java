@@ -1,11 +1,9 @@
-package com.astrodoorways.db.filesystem;
+package com.astrodoorways.converter.db.filesystem;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
-
-import org.hibernate.ScrollableResults;
 
 public interface FileStructureToDatabaseWriter {
 

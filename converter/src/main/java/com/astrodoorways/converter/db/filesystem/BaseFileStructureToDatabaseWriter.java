@@ -1,4 +1,4 @@
-package com.astrodoorways.db.filesystem;
+package com.astrodoorways.converter.db.filesystem;
 
 import java.io.File;
 import java.io.IOException;
@@ -8,7 +8,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.hibernate.ScrollableResults;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,7 +44,7 @@ public class BaseFileStructureToDatabaseWriter implements FileStructureWriter, F
 	}
 
 	/* (non-Javadoc)
-	 * @see com.astrodoorways.db.filesystem.FileStructureToDatabaseWriter#writeFileStructure(java.io.File)
+	 * @see com.astrodoorways.converter.db.filesystem.FileStructureToDatabaseWriter#writeFileStructure(java.io.File)
 	 */
 	@Override
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -80,7 +79,7 @@ public class BaseFileStructureToDatabaseWriter implements FileStructureWriter, F
 	}
 
 	/* (non-Javadoc)
-	 * @see com.astrodoorways.db.filesystem.FileStructureToDatabaseWriter#getCollectionOfFiles()
+	 * @see com.astrodoorways.converter.db.filesystem.FileStructureToDatabaseWriter#getCollectionOfFiles()
 	 */
 	@Override
 	public Collection<String> getCollectionOfFiles() {
@@ -93,7 +92,7 @@ public class BaseFileStructureToDatabaseWriter implements FileStructureWriter, F
 	}
 
 	/* (non-Javadoc)
-	 * @see com.astrodoorways.db.filesystem.FileStructureToDatabaseWriter#getFileInfos()
+	 * @see com.astrodoorways.converter.db.filesystem.FileStructureToDatabaseWriter#getFileInfos()
 	 */
 	@Override
 	public List<FileInfo> getFileInfos() {
@@ -101,7 +100,7 @@ public class BaseFileStructureToDatabaseWriter implements FileStructureWriter, F
 	}
 
 	/* (non-Javadoc)
-	 * @see com.astrodoorways.db.filesystem.FileStructureToDatabaseWriter#getFileInfoDAO()
+	 * @see com.astrodoorways.converter.db.filesystem.FileStructureToDatabaseWriter#getFileInfoDAO()
 	 */
 	@Override
 	public FileInfoDAO getFileInfoDAO() {
@@ -109,7 +108,7 @@ public class BaseFileStructureToDatabaseWriter implements FileStructureWriter, F
 	}
 
 	/* (non-Javadoc)
-	 * @see com.astrodoorways.db.filesystem.FileStructureToDatabaseWriter#setFileStructureDAO(com.astrodoorways.db.filesystem.FileInfoDAO)
+	 * @see com.astrodoorways.converter.db.filesystem.FileStructureToDatabaseWriter#setFileStructureDAO(com.astrodoorways.converter.db.filesystem.FileInfoDAO)
 	 */
 	@Override
 	public void setFileStructureDAO(FileInfoDAO fileStructureDAO) {
@@ -117,7 +116,7 @@ public class BaseFileStructureToDatabaseWriter implements FileStructureWriter, F
 	}
 
 	/* (non-Javadoc)
-	 * @see com.astrodoorways.db.filesystem.FileStructureToDatabaseWriter#getJob()
+	 * @see com.astrodoorways.converter.db.filesystem.FileStructureToDatabaseWriter#getJob()
 	 */
 	@Override
 	public Job getJob() {
@@ -125,7 +124,7 @@ public class BaseFileStructureToDatabaseWriter implements FileStructureWriter, F
 	}
 
 	/* (non-Javadoc)
-	 * @see com.astrodoorways.db.filesystem.FileStructureToDatabaseWriter#setJob(com.astrodoorways.db.filesystem.Job)
+	 * @see com.astrodoorways.converter.db.filesystem.FileStructureToDatabaseWriter#setJob(com.astrodoorways.converter.db.filesystem.Job)
 	 */
 	@Override
 	public void setJob(Job job) {

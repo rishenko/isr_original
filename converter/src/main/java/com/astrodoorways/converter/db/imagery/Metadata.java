@@ -1,4 +1,4 @@
-package com.astrodoorways.db.imagery;
+package com.astrodoorways.converter.db.imagery;
 
 import java.util.Date;
 
@@ -11,7 +11,7 @@ import javax.persistence.Id;
 import javax.persistence.ManyToOne;
 import javax.persistence.SequenceGenerator;
 
-import com.astrodoorways.db.filesystem.FileInfo;
+import com.astrodoorways.converter.db.filesystem.FileInfo;
 
 @Entity(name = "metadata")
 public class Metadata {

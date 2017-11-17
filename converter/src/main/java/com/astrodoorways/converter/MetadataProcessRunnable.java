@@ -8,8 +8,8 @@ import javax.imageio.metadata.IIOMetadata;
 
 import org.slf4j.Logger;
 
-import com.astrodoorways.db.filesystem.FileInfo;
-import com.astrodoorways.db.filesystem.Job;
+import com.astrodoorways.converter.db.filesystem.FileInfo;
+import com.astrodoorways.converter.db.filesystem.Job;
 
 public interface MetadataProcessRunnable extends Runnable {
 

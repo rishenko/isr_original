@@ -11,12 +11,11 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
  * @author kmcabee
  * 
  */
-@SpringBootApplication(scanBasePackages = "com.astrodoorways")
+@SpringBootApplication(scanBasePackages = "com.astrodoorways.converter")
 @EnableJpaRepositories(basePackages = "com.astrodoorways")
 @EntityScan(basePackages = "com.astrodoorways")
 public class RunConverter {
 	public static void main(String... args) {
 		SpringApplication.run(RunConverter.class, args);
 	}
-
 }
