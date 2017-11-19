@@ -1,26 +1,18 @@
 package com.astrodoorways.converter.vicar.exif;
 
-import java.io.File;
-import java.io.IOException;
-import java.text.ParseException;
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.imageio.metadata.IIOMetadata;
-
+import com.astrodoorways.converter.metadata.processor.MetadataProcessor;
+import com.astrodoorways.converter.vicar.VicarConstants;
+import com.thebuzzmedia.exiftool.ExifTool;
+import com.thebuzzmedia.exiftool.Tag;
+import com.thebuzzmedia.exiftool.core.StandardTag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import be.pw.jexif.JExifInfo;
-import be.pw.jexif.JExifTool;
-import be.pw.jexif.enums.tag.ExifIFD;
-import be.pw.jexif.enums.tag.Tag;
-import be.pw.jexif.exception.ExifError;
-import be.pw.jexif.exception.JExifException;
-
-import com.astrodoorways.converter.jexif.tag.OtherExifTags;
-import com.astrodoorways.converter.metadata.processor.MetadataProcessor;
-import com.astrodoorways.converter.vicar.VicarConstants;
+import javax.imageio.metadata.IIOMetadata;
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * A converter that takes a metadata object for a VICAR image file and sets it
@@ -33,9 +25,9 @@ public class VicarThreadedJEXIFConverter {
 
 	private static final Logger logger = LoggerFactory.getLogger(VicarThreadedJEXIFConverter.class);
 
-	private final JExifTool tool;
+	private final ExifTool tool;
 
-	public VicarThreadedJEXIFConverter(JExifTool tool) {
+	public VicarThreadedJEXIFConverter(ExifTool tool) {
 		this.tool = tool;
 	}
 
@@ -48,27 +40,20 @@ public class VicarThreadedJEXIFConverter {
 	 * @throws IOException
 	 */
 	public void convert(String inputFilePath, IIOMetadata metadata) throws IOException {
-		JExifInfo info = tool.getInfo(new File(inputFilePath));
 		MetadataProcessor metadataProcessor = new MetadataProcessor();
 		Map<String, String> valueMap = metadataProcessor.process(metadata);
 		logger.trace("value map {}", new Object[] { valueMap });
 
-		try {
-			info.setTagValue(ExifIFD.EXPOSURETIME, valueMap.get(VicarConstants.EXPOSURE));
-			info.setTagValue(ExifIFD.DATETIMEORIGINAL,
-					metadataProcessor.convertVicarDateToExifFormat(valueMap.get(VicarConstants.TIME)));
-			info.setTagValue(OtherExifTags.LENS, valueMap.get(VicarConstants.CAMERA));
-			info.setTagValue(OtherExifTags.MODEL, valueMap.get(VicarConstants.FILTER));
-			info.setTagValue(OtherExifTags.MAKE, valueMap.get(VicarConstants.MISSION));
-			info.setTagValue(ExifIFD.USERCOMMENT, valueMap.get(VicarConstants.TARGET));
-			logger.trace("finished setting tags");
-		} catch (ExifError e) {
-			logger.error("exif processing error", e);
-		} catch (JExifException e) {
-			logger.error("exif processing error", e);
-		} catch (ParseException e) {
-			logger.error("parsing exception while processing exif data", e);
-		}
+		Map<Tag, String> exifData = new HashMap<>();
+		exifData.put(StandardTag.EXPOSURE_TIME, valueMap.get(VicarConstants.EXPOSURE));
+		exifData.put(StandardTag.DATE_TIME_ORIGINAL, valueMap.get(VicarConstants.TIME));
+		exifData.put(StandardTag.LENS_ID, valueMap.get(VicarConstants.CAMERA));
+		exifData.put(StandardTag.MODEL, valueMap.get(VicarConstants.FILTER));
+		exifData.put(StandardTag.MAKE, valueMap.get(VicarConstants.MISSION));
+		exifData.put(StandardTag.COMMENT, valueMap.get(VicarConstants.TARGET));
+
+		tool.setImageMeta(new File(inputFilePath), exifData);
+		logger.trace("finished setting tags");
 
 		File origCopy = new File(inputFilePath + "_original");
 		origCopy.delete();
