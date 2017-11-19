@@ -53,13 +53,9 @@ public class ConverterImpl implements Converter {
 	private Job job;
 
 	/**
-	 * @throws IOException
-	 * @throws FileNotFoundException
+	 * Default no-arg constructor to allow for bean usage.
 	 */
-	public ConverterImpl() throws FileNotFoundException, IOException {
-		Properties p = new Properties();
-		p.load(new FileInputStream(new File("./jexiftool.properties")));
-	}
+	public ConverterImpl() {}
 
 	public ConverterImpl(String readDirectory, String writeDirectory) {
 		this.readDirectory = readDirectory;
