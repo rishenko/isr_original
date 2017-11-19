@@ -123,7 +123,9 @@ public class BitweightCalibrator extends AbstractBaseCalibrator {
 			reader.close();
 
 			for (int i = 0; i < imageArray.length; i++) {
-				imageArray[i] = bitweightData.get((int) imageArray[i]);
+				int val = (int) (imageArray[i] > 0 ? imageArray[i] : 0);
+				val = val < 4095 ? val : 4095;
+				imageArray[i] = bitweightData.get(val);
 			}
 		} catch (IndexOutOfBoundsException e) {
 			logger.error("array out of bounds for " + fname, e);
