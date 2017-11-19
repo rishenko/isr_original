@@ -1,12 +1,11 @@
 package com.astrodoorways.converter;
 
-import be.pw.jexif.JExifTool;
 import com.astrodoorways.converter.converters.VicarImageConverter;
-import com.astrodoorways.converter.vicar.exif.VicarThreadedJEXIFConverter;
 import com.astrodoorways.converter.db.filesystem.FileInfo;
 import com.astrodoorways.converter.db.filesystem.FileInfoDAO;
 import com.astrodoorways.converter.db.imagery.Metadata;
-import org.apache.commons.pool2.ObjectPool;
+import com.astrodoorways.converter.vicar.exif.VicarThreadedJEXIFConverter;
+import com.thebuzzmedia.exiftool.ExifTool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,7 +35,7 @@ public class ConvertRunnable implements Runnable {
 	private String filePath;
 	private Integer seqCount;
 	private String writeDirectory;
-	private ObjectPool<JExifTool> jexifToolPool;
+	private ExifTool exifTool;
 	private AtomicInteger counter;
 	private int maxValue;
 	private String type;
@@ -48,11 +47,11 @@ public class ConvertRunnable implements Runnable {
 	public ConvertRunnable() {
 	}
 
-	public ConvertRunnable(Metadata metadata, String writeDirectory, ObjectPool<JExifTool> jexifToolPool, String type,
+	public ConvertRunnable(Metadata metadata, String writeDirectory, ExifTool exifTool, String type,
 			AtomicInteger counter, int maxValue) {
 		this.metadata = metadata;
 		this.writeDirectory = writeDirectory;
-		this.jexifToolPool = jexifToolPool;
+		this.exifTool = exifTool;
 		this.counter = counter;
 		this.maxValue = maxValue;
 		this.type = type;
@@ -60,10 +59,10 @@ public class ConvertRunnable implements Runnable {
 	}
 
 	public ConvertRunnable(Metadata metadata, Integer seqCount, String writeDirectory,
-			ObjectPool<JExifTool> jexifToolPool, String type, AtomicInteger counter, int maxValue) {
+						   ExifTool exifTool, String type, AtomicInteger counter, int maxValue) {
 		this.metadata = metadata;
 		this.writeDirectory = writeDirectory;
-		this.jexifToolPool = jexifToolPool;
+		this.exifTool = exifTool;
 		this.counter = counter;
 		this.maxValue = maxValue;
 		this.type = type;
@@ -76,7 +75,6 @@ public class ConvertRunnable implements Runnable {
 		if (!ACCEPTED_EXTENSIONS.contains(metadata.getFileInfo().getExtension())) {
 			return;
 		}
-		JExifTool tool = null;
 		try {
 			logger.trace("about to convert image {} to type {}", metadata.getFileInfo(), type);
 			VicarImageConverter converter = new VicarImageConverter(metadata, seqCount, writeDirectory, type, counter);
@@ -85,8 +83,7 @@ public class ConvertRunnable implements Runnable {
 			logger.trace("converted image {}", converter.getOutputtedFilePaths().toArray());
 			// exif is an expensive operation, only use on smaller files, add override somehow
 			if (new File(getOutputFilePath()).length() < maxFileSizeForExif) {
-				tool = jexifToolPool.borrowObject();
-				VicarThreadedJEXIFConverter exifConverter = new VicarThreadedJEXIFConverter(tool);
+				VicarThreadedJEXIFConverter exifConverter = new VicarThreadedJEXIFConverter(exifTool);
 				for (String path : converter.getOutputtedFilePaths()) {
 					exifConverter.convert(path, converter.getIIOMetaData());
 				}
@@ -111,14 +108,6 @@ public class ConvertRunnable implements Runnable {
 				logger.error("an unknown error {}", e);
 			} catch (EmptyStackException ee) {
 				logger.error("empty stack issue with {}", e.getClass());
-			}
-		} finally {
-			if (tool != null) {
-				try {
-					jexifToolPool.returnObject(tool);
-				} catch (Exception e) {
-					logger.error("error returning the jexif tool to the pool", e);
-				}
 			}
 		}
 	}
@@ -197,8 +186,8 @@ public class ConvertRunnable implements Runnable {
 		return writeDirectory;
 	}
 
-	public ObjectPool<JExifTool> getJexifToolPool() {
-		return jexifToolPool;
+	public ExifTool getExifTool() {
+		return exifTool;
 	}
 
 	public AtomicInteger getCounter() {
@@ -225,8 +214,8 @@ public class ConvertRunnable implements Runnable {
 		this.writeDirectory = writeDirectory;
 	}
 
-	public void setJexifToolPool(ObjectPool<JExifTool> jexifToolPool) {
-		this.jexifToolPool = jexifToolPool;
+	public void setExifTool(ExifTool exifTool) {
+		this.exifTool = exifTool;
 	}
 
 	public void setCounter(AtomicInteger counter) {

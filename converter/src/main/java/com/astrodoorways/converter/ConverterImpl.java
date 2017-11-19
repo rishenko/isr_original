@@ -1,14 +1,11 @@
 package com.astrodoorways.converter;
 
-import be.pw.jexif.JExifTool;
-import com.astrodoorways.converter.jexif.pool.JExifToolPoolableFactory;
 import com.astrodoorways.converter.db.filesystem.*;
 import com.astrodoorways.converter.db.imagery.Metadata;
 import com.astrodoorways.converter.db.imagery.MetadataDAO;
 import com.google.common.base.Strings;
-import org.apache.commons.pool2.ObjectPool;
-import org.apache.commons.pool2.impl.GenericObjectPool;
-import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
+import com.thebuzzmedia.exiftool.ExifTool;
+import com.thebuzzmedia.exiftool.ExifToolBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -172,10 +169,10 @@ public class ConverterImpl implements Converter {
 	 */
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
 	private void convertFiles(int numProcesses) throws Exception {
-		GenericObjectPoolConfig config = new GenericObjectPoolConfig();
-		config.setMaxTotal(1);
-		ObjectPool<JExifTool> jexifToolPool = new GenericObjectPool<>(new JExifToolPoolableFactory(
-				writeDirectory + "/jexiftool-args"));
+		ExifTool exifTool = new ExifToolBuilder()
+				.withPoolSize(10)
+				.enableStayOpen()
+				.build();
 
 		// Convert all of the files according to the metadata in the database
 		AtomicInteger counter = new AtomicInteger();
@@ -191,7 +188,7 @@ public class ConverterImpl implements Converter {
 			executorThrottleBasic(converterExecutor);
 			logger.debug("adding sequence convert task: {}", metadata);
 			ConvertRunnable runnable = context.getBean(ConvertRunnable.class);
-			prepConvertRunnable(jexifToolPool, counter, metadataCount, metadata, runnable);
+			prepConvertRunnable(exifTool, counter, metadataCount, metadata, runnable);
 			if (isSequence())
 				runnable.setSeqCount(count++);
 			converterExecutor.execute(runnable);
@@ -202,13 +199,13 @@ public class ConverterImpl implements Converter {
 		converterExecutor.shutdown();
 		while (!converterExecutor.getThreadPoolExecutor().isTerminated()) {}
 
-		jexifToolPool.close();
+		exifTool.close();
 	}
 
-	private void prepConvertRunnable(ObjectPool<JExifTool> jexifToolPool, AtomicInteger counter, int metadataCount, Metadata metadata, ConvertRunnable runnable) {
+	private void prepConvertRunnable(ExifTool exifTool, AtomicInteger counter, int metadataCount, Metadata metadata, ConvertRunnable runnable) {
 		runnable.setMetadata(metadata);
 		runnable.setWriteDirectory(writeDirectory);
-		runnable.setJexifToolPool(jexifToolPool);
+		runnable.setExifTool(exifTool);
 		runnable.setType("TIFF");
 		runnable.setCounter(counter);
 		runnable.setMaxValue(metadataCount);
