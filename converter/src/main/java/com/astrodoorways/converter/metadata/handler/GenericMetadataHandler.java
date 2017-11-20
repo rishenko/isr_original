@@ -11,12 +11,11 @@ public class GenericMetadataHandler implements MetadataHandler {
 
 	public static final SimpleDateFormat VICAR_FORMATTER = new SimpleDateFormat("yyyy-DDD'T'HH:mm:ss.SSS'Z'");
 
-	Map<String, String> valueMap = new HashMap<String, String>();
+	private Map<String, String> valueMap = new HashMap<>();
 
 	@Override
 	public Map<String, String> buildValueMapFromMetadata(Node node) {
-		//		String nodeString = node.getLastChild().getLastChild().getAttributes().item(2).getNodeValue();
-		Map<String, String> valueMap = new HashMap<String, String>();
+		Map<String, String> valueMap = new HashMap<>();
 		valueMap.put(EXPOSURE, "0.0");
 		valueMap.put(TIME, VICAR_FORMATTER.format(new Date()));
 		valueMap.put(CAMERA, "");

@@ -48,11 +48,11 @@ public final class ApplicationProperties {
 	}
 
 	public static boolean getPropertyAsBoolean(String property) {
+		boolean result = false;
 		if (System.getProperties().containsKey(property)) {
-			return Boolean.parseBoolean(System.getProperties().getProperty(property));
+			result = Boolean.parseBoolean(System.getProperties().getProperty(property));
 		}
-
-		return false;
+		return result;
 	}
 
 	public static Integer getPropertyAsInteger(String property) {

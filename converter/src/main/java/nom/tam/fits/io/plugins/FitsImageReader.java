@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
 
 public class FitsImageReader extends ImageReader {
 
-	Logger logger = LoggerFactory.getLogger(FitsImageReader.class);
+	final Logger logger = LoggerFactory.getLogger(FitsImageReader.class);
 
 	private boolean havePreparedFits;
 	private ImageInputStream stream;
@@ -115,7 +115,7 @@ public class FitsImageReader extends ImageReader {
 
 	@Override
 	public Iterator<ImageTypeSpecifier> getImageTypes(int imageIndex) {
-		java.util.List<ImageTypeSpecifier> l = new ArrayList<ImageTypeSpecifier>();
+		java.util.List<ImageTypeSpecifier> l = new ArrayList<>();
 		ImageTypeSpecifier imageType = null;
 		int datatype = DataBuffer.TYPE_BYTE;
 
@@ -155,14 +155,13 @@ public class FitsImageReader extends ImageReader {
 
 	@Override
 	public BufferedImage read(int imageIndex, ImageReadParam arg1) throws IOException {
-		int imageType = 0;
 		BufferedImage image = null;
 
 		int width = getWidth(0);
 		int height = getHeight(0);
 
 		if (getImageData() instanceof byte[][]) {
-			imageType = BufferedImage.TYPE_BYTE_GRAY;
+			logger.trace("image is byte based");
 
 		} else if (getImageData() instanceof short[][]) {
 			logger.trace("image is unsigned short");

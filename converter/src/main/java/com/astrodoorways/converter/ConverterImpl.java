@@ -18,7 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.*;
 import java.util.Date;
 import java.util.List;
-import java.util.Properties;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -84,7 +83,7 @@ public class ConverterImpl implements Converter {
 			numProcesses = (int) (Runtime.getRuntime().availableProcessors() * .75);
 
 		// Parse the file structure for applicable files
-		List<FileInfo> fileInfos = null;
+		List<FileInfo> fileInfos;
 		Long jobId = ApplicationProperties.getPropertyAsLong(ApplicationProperties.JOB_ID);
 		if (jobId == null) {
 			job = buildAndPersistJob();
@@ -264,18 +263,8 @@ public class ConverterImpl implements Converter {
 	}
 
 	@Override
-	public String getReadDirectory() {
-		return readDirectory;
-	}
-
-	@Override
 	public void setReadDirectory(String readDirectory) {
 		this.readDirectory = readDirectory;
-	}
-
-	@Override
-	public String getWriteDirectory() {
-		return writeDirectory;
 	}
 
 	@Override

@@ -38,9 +38,9 @@ public class MetadataProcessor {
 
 	private MetadataHandler handler;
 
-	private List<MetadataHandler> handlerList = new ArrayList<MetadataHandler>();
+	private final List<MetadataHandler> handlerList = new ArrayList<>();
 
-	Logger logger = LoggerFactory.getLogger(MetadataProcessor.class);
+	final Logger logger = LoggerFactory.getLogger(MetadataProcessor.class);
 
 	public MetadataProcessor() {
 		buildHandlerMap();
@@ -66,8 +66,7 @@ public class MetadataProcessor {
 				logger.error("{} errored attempting to inspect metadata", handler);
 			}
 		}
-		MetadataHandler genericHandler = new GenericMetadataHandler();
-		return genericHandler;
+		return new GenericMetadataHandler();
 	}
 
 	private void buildHandlerMap() {
@@ -79,8 +78,7 @@ public class MetadataProcessor {
 
 	public String convertVicarDateToExifFormat(String vicarDate) throws ParseException {
 		Date date = handler.getFormatter().parse(vicarDate);
-		String finalDate = EXIF_FORMATTER.format(date);
-		return finalDate;
+		return EXIF_FORMATTER.format(date);
 	}
 
 	/**
@@ -90,7 +88,7 @@ public class MetadataProcessor {
 	 * @return
 	 */
 	public static Map<String, String> buildValueMapFromNode(Node node) {
-		Map<String, String> valueMap = new HashMap<String, String>();
+		Map<String, String> valueMap = new HashMap<>();
 		NodeList list = node.getChildNodes();
 		for (int i = 0; i < list.getLength(); i++) {
 			Node child = list.item(i);

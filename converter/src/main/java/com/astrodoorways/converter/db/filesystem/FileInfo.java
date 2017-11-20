@@ -23,7 +23,7 @@ public class FileInfo {
 	private String directory;
 	private String extension;
 	private Job job;
-	private List<Metadata> metadata = new ArrayList<Metadata>();
+	private List<Metadata> metadata = new ArrayList<>();
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO, generator = "file_struct_dto_seq_gen")

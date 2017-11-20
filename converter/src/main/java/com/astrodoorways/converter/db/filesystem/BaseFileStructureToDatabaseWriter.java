@@ -23,9 +23,9 @@ import com.astrodoorways.filesystem.writers.FileStructureWriter;
 @Scope("prototype")
 @Transactional
 public class BaseFileStructureToDatabaseWriter implements FileStructureWriter, FileStructureToDatabaseWriter {
-	Logger logger = LoggerFactory.getLogger(FileStructureToFileWriter.class);
+	private final Logger logger = LoggerFactory.getLogger(FileStructureToFileWriter.class);
 
-	private Set<String> acceptedExtensions = new HashSet<String>();
+	private Set<String> acceptedExtensions = new HashSet<>();
 
 	@Autowired
 	private FileInfoDAO fileInfoDAO;
@@ -37,7 +37,7 @@ public class BaseFileStructureToDatabaseWriter implements FileStructureWriter, F
 
 	public BaseFileStructureToDatabaseWriter() {
 		String[] extensions = new String[] { "img", "fit", "fits", "fz" };
-		this.acceptedExtensions = new HashSet<String>();
+		this.acceptedExtensions = new HashSet<>();
 		for (String extension : extensions) {
 			acceptedExtensions.add(extension.toLowerCase());
 		}
@@ -53,8 +53,7 @@ public class BaseFileStructureToDatabaseWriter implements FileStructureWriter, F
 			logger.error("this file does not exist {}", file.getAbsolutePath());
 			throw new IOException("this file does not exist " + file.getAbsolutePath());
 		}
-		// if file is a directory, recursively call writeFileStructure on its
-		// children
+		// if file is a directory, recursively call writeFileStructure on its children
 		if (file.isDirectory()) {
 			for (File child : file.listFiles()) {
 				writeFileStructure(child);
@@ -84,7 +83,7 @@ public class BaseFileStructureToDatabaseWriter implements FileStructureWriter, F
 	@Override
 	public Collection<String> getCollectionOfFiles() {
 		List<FileInfo> results = getFileInfoDAO().findByJob(job);
-		List<String> fileNames = new ArrayList<String>();
+		List<String> fileNames = new ArrayList<>();
 		for (FileInfo result: results) {
 			fileNames.add(result.getDirectory() + "/" + result.getFileName());
 		}

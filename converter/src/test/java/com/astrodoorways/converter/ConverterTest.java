@@ -1,9 +1,5 @@
 package com.astrodoorways.converter;
 
-import com.astrodoorways.converter.ApplicationProperties;
-import com.astrodoorways.converter.Converter;
-import com.astrodoorways.converter.ConverterImpl;
-import com.astrodoorways.converter.RunConverter;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;

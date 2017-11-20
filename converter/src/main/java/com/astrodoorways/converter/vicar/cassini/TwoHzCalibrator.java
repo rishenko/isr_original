@@ -9,10 +9,12 @@ import org.slf4j.LoggerFactory;
 
 import Jama.Matrix;
 
+/**
+ * Part of the Cassini calibration steps. However, this code was never completed.
+ */
 public class TwoHzCalibrator extends AbstractBaseCalibrator {
 
 	private String metadataString;
-	private double[][] overclockedPixels;
 	private double[] overclockedAvg;
 
 	Logger logger = LoggerFactory.getLogger(TwoHzCalibrator.class);
@@ -64,7 +66,7 @@ public class TwoHzCalibrator extends AbstractBaseCalibrator {
 	public void buildOverclockedData(double[] imageArray) {
 		String format = extractValue("FORMAT", metadataString);
 		int rows = imageArray.length / 2;
-		overclockedPixels = new double[2][rows];
+		double[][] overclockedPixels = new double[2][rows];
 		Integer nbb = Integer.parseInt(extractValue("NBB", metadataString));
 		String blType = extractValue("BLTYPE", metadataString);
 		Matrix overclockMatrix = new Matrix(imageArray, rows);
@@ -128,26 +130,4 @@ public class TwoHzCalibrator extends AbstractBaseCalibrator {
 			}
 		}
 	}
-
-	public void healMissingMin(double[] imageArray) {
-
-	}
-
-	public void healMissingAvg(double[] imageArray) {
-	}
-
-	public void findMissing(double[] imageArray) {
-		//		List<Integer> missingCoords = new ArrayList<Integer>();
-		//		Matrix missingCoords = new Matrix(imageArray, imageArray.length/1024);
-		//		missingCoords.
-		//		for (int i=0; i<imageArray.length; i++) {
-		//			if (imageArray[i] == 0.0) {
-		//				missingCoords.add(i);
-		//			}
-		//		}
-	}
-
-	public void autoStarLevel(double[] imageArray) {
-	}
-
 }

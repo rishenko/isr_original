@@ -42,8 +42,7 @@ public abstract class AbstractBaseCalibrator implements Calibrator {
 
 	public String getNodeString(IIOMetadata metadata) {
 		Node node = metadata.getAsTree(METADATAFORMAT);
-		String nodeString = node.getLastChild().getLastChild().getAttributes().item(2).getNodeValue();
-		return nodeString;
+		return node.getLastChild().getLastChild().getAttributes().item(2).getNodeValue();
 	}
 
 	protected static String extractValue(String field, String stringToCheck) {
@@ -69,13 +68,13 @@ public abstract class AbstractBaseCalibrator implements Calibrator {
 			String value = matchedString.split("=")[1].trim();
 			value = value.substring(1, value.length() - 1);
 			String[] subValues = value.split(",");
-			String finalValue = "";
+			StringBuilder finalValue = new StringBuilder();
 			for (String subValue : subValues) {
 				subValue = subValue.trim();
 				if (subValue.startsWith("'")) {
 					subValue = subValue.substring(1, subValue.length() - 1);
 				}
-				finalValue += subValue + ",";
+				finalValue.append(subValue).append(",");
 			}
 			scanner.close();
 			return finalValue.substring(0, finalValue.length() - 1);

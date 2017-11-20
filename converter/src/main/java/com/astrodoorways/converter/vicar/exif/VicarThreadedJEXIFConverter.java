@@ -11,6 +11,8 @@ import org.slf4j.LoggerFactory;
 import javax.imageio.metadata.IIOMetadata;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -55,7 +57,6 @@ public class VicarThreadedJEXIFConverter {
 		tool.setImageMeta(new File(inputFilePath), exifData);
 		logger.trace("finished setting tags");
 
-		File origCopy = new File(inputFilePath + "_original");
-		origCopy.delete();
+		Files.deleteIfExists(Paths.get(inputFilePath + "_original"));
 	}
 }

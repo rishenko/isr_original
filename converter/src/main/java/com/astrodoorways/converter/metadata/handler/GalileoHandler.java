@@ -15,13 +15,13 @@ import com.google.common.base.Strings;
 
 public class GalileoHandler extends AbstractVicarHandler {
 
-	Logger logger = LoggerFactory.getLogger(GalileoHandler.class);
+	private final Logger logger = LoggerFactory.getLogger(GalileoHandler.class);
 
 	public final SimpleDateFormat GALILEO_FORMATTER = new SimpleDateFormat("yyyyDDDHHmmssSSS");
 
 	@Override
 	public Map<String, String> buildValueMapFromMetadata(Node node) {
-		Map<String, String> valueMap = new HashMap<String, String>();
+		Map<String, String> valueMap = new HashMap<>();
 		String nodeString = node.getLastChild().getLastChild().getAttributes().item(2).getNodeValue();
 		valueMap.put(EXPOSURE, "0");
 		// example values: ERTYEAR=2001 ERTDAY=350 ERTHOUR=2 ERTMIN=35 ERTSEC=10

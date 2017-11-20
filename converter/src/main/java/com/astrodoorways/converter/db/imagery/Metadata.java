@@ -115,8 +115,7 @@ public class Metadata {
 		}
 
 		Metadata toCheck = (Metadata) obj;
-		boolean isEqual = true;
-		isEqual = isEqual && basicEqualityTest(mission, toCheck.getMission());
+		boolean isEqual = basicEqualityTest(mission, toCheck.getMission());
 		isEqual = isEqual && basicEqualityTest(target, toCheck.getTarget());
 		isEqual = isEqual && basicEqualityTest(filterOne, toCheck.getFilterOne());
 		isEqual = isEqual && basicEqualityTest(filterTwo, toCheck.getFilterTwo());

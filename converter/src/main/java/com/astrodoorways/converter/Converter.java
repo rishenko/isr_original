@@ -10,11 +10,7 @@ public interface Converter {
     void executorThrottle(ThreadPoolTaskExecutor executor, int count, int sleepSeconds)
             throws InterruptedException;
 
-    String getReadDirectory();
-
     void setReadDirectory(String readDirectory);
-
-    String getWriteDirectory();
 
     void setWriteDirectory(String writeDirectory);
 }

@@ -11,7 +11,7 @@ import org.w3c.dom.NodeList;
 
 public class LROHandler extends AbstractVicarHandler {
 
-	Logger logger = LoggerFactory.getLogger(LROHandler.class);
+	private final Logger logger = LoggerFactory.getLogger(LROHandler.class);
 
 	public final SimpleDateFormat LROC_TIME_FORMATTER = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss"); // 2011-02-28T17:07:39
 
@@ -45,15 +45,7 @@ public class LROHandler extends AbstractVicarHandler {
 
 	@Override
 	public String getFileStructure() {
-		String fileStructure = "";
-		//		try {
-		//			Calendar date = convertVicarDateToDate(getValueMap().get(TIME));
-		//			fileStructure += date.get(Calendar.YEAR) + "/" + date.get(Calendar.MONTH) + "/"
-		//					+ date.get(Calendar.DAY_OF_MONTH);
-		//		} catch (Exception e) {
-		//			// do nothing
-		//		}
-		return fileStructure;
+		return "";
 	}
 
 	public void convertMetadataNodeToHashMap(Node node, String prefix) {

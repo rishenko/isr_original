@@ -29,7 +29,7 @@ import com.astrodoorways.converter.db.filesystem.Job;
 import com.astrodoorways.converter.db.imagery.Metadata;
 import com.astrodoorways.converter.db.imagery.MetadataDAO;
 
-@Component
+@Component("metadataProcessRunnable")
 @Scope("prototype")
 @Transactional(propagation = Propagation.REQUIRES_NEW)
 public class BaseMetadataProcessRunnable implements Runnable, MetadataProcessRunnable {
@@ -45,13 +45,12 @@ public class BaseMetadataProcessRunnable implements Runnable, MetadataProcessRun
 	private Job job;
 	private IIOMetadata metadata;
 	private AtomicInteger counter;
-	private MetadataProcessor metadataProcessor = new MetadataProcessor();
+	private final MetadataProcessor metadataProcessor = new MetadataProcessor();
 	private int maxValue;
 
-	Logger logger = LoggerFactory.getLogger(BaseMetadataProcessRunnable.class);
+	private Logger logger = LoggerFactory.getLogger(BaseMetadataProcessRunnable.class);
 
-	public BaseMetadataProcessRunnable() {
-	}
+	public BaseMetadataProcessRunnable() {}
 
 	public BaseMetadataProcessRunnable(Job job, FileInfo fileInfo, AtomicInteger counter, int maxValue) {
 		this.job = job;
@@ -144,7 +143,7 @@ public class BaseMetadataProcessRunnable implements Runnable, MetadataProcessRun
 		logger.trace("creating input stream");
 		ImageInputStream stream = ImageIO.createImageInputStream(file);
 		logger.trace("getting image readers");
-		Iterator<ImageReader> readers = (Iterator<ImageReader>) ImageIO.getImageReaders(stream);
+		Iterator<ImageReader> readers = ImageIO.getImageReaders(stream);
 		if (!readers.hasNext()) {
 			logger.error("no image reader was found for {}", file.getAbsolutePath());
 			stream.close();

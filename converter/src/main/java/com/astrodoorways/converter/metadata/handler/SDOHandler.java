@@ -11,8 +11,6 @@ import org.w3c.dom.Node;
 
 public class SDOHandler extends AbstractVicarHandler {
 
-	Logger logger = LoggerFactory.getLogger(SDOHandler.class);
-
 	public final SimpleDateFormat SDO_TIME_FORMATTER = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SS'Z'");
 
 	@Override

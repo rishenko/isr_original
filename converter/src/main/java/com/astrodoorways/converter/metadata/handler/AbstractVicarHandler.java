@@ -19,9 +19,7 @@ public abstract class AbstractVicarHandler implements MetadataHandler {
 
 	public final SimpleDateFormat VICAR_FORMATTER = new SimpleDateFormat("yyyy-DDD'T'HH:mm:ss.SSS'Z'");
 
-	private static final Logger logger = LoggerFactory.getLogger(AbstractVicarHandler.class);
-
-	private Map<String, String> valueMap = new HashMap<String, String>();
+	private Map<String, String> valueMap = new HashMap<>();
 
 	@Override
 	abstract public Map<String, String> buildValueMapFromMetadata(Node node);
@@ -58,13 +56,13 @@ public abstract class AbstractVicarHandler implements MetadataHandler {
 			String value = matchedString.split("=")[1].trim();
 			value = value.substring(1, value.length() - 1);
 			String[] subValues = value.split(",");
-			String finalValue = "";
+			StringBuilder finalValue = new StringBuilder();
 			for (String subValue : subValues) {
 				subValue = subValue.trim();
 				if (subValue.startsWith("'")) {
 					subValue = subValue.substring(1, subValue.length() - 1);
 				}
-				finalValue += subValue + ",";
+				finalValue.append(subValue).append(",");
 			}
 			scanner.close();
 			return finalValue.substring(0, finalValue.length() - 1);
@@ -143,8 +141,7 @@ public abstract class AbstractVicarHandler implements MetadataHandler {
 			}
 		}
 
-		String finalDate = TIMESTAMP_FORMATTER.format(date);
-		return finalDate;
+		return TIMESTAMP_FORMATTER.format(date);
 	}
 
 	@Override
@@ -152,7 +149,7 @@ public abstract class AbstractVicarHandler implements MetadataHandler {
 		String mission = getValueMap().get(MISSION);
 		String target = getValueMap().get(TARGET);
 		String filter = getValueMap().get(FILTER);
-		String fileName = "";
+		String fileName;
 		try {
 			String time = convertVicarDateToTimestamp(getValueMap().get(TIME));
 			if (isSequencedFile()) {
