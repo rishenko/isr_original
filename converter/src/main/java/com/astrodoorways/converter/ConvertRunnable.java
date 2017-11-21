@@ -92,23 +92,9 @@ public class ConvertRunnable implements Runnable {
 			updateMetadata(converter.getOutputtedFilePaths());
 			postProcessImage();
 			logger.debug("finished converting {} - {}", filePath, completionMessage());
-		} catch (IllegalStateException e) {
-			String msg = e.getMessage();
-			if (msg.contains("image already exists")) {
-				logger.debug("{} - {}", msg, completionMessage());
-			} else {
-				logger.error("unknown state exception error", e);
-			}
-		} catch (ParseException e) {
-			logger.error("error  parsing the date", e);
-		} catch (IOException e) {
-			logger.error("there was a problem converting the file " + filePath, e);
 		} catch (Exception e) {
-			try {
-				logger.error("an unknown error {}", e);
-			} catch (EmptyStackException ee) {
-				logger.error("empty stack issue with {}", e.getClass());
-			}
+			String errMsg = "failed to convert " + filePath + " - " + completionMessage();
+			logger.error(errMsg, e);
 		}
 	}
 
