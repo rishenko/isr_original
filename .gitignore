@@ -1,5 +1,6 @@
 ### Converter
 converter/src/test/resources/calib
+converter/*.log
 
 
 ### Java template
