@@ -9,7 +9,9 @@ import com.thebuzzmedia.exiftool.ExifToolBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Scope;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
@@ -21,7 +23,10 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static java.lang.Thread.sleep;
+
 @Component("converter")
+@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ConverterImpl implements Converter {
 
 	private static final Logger logger = LoggerFactory.getLogger(ConverterImpl.class);
@@ -77,11 +82,6 @@ public class ConverterImpl implements Converter {
 					"both readDirectory and writeDirectory must not be null or empty strings");
 		}
 
-		// prepare jexif, thread, and process pools
-		Integer numProcesses = ApplicationProperties.getPropertyAsInteger(ApplicationProperties.MAX_NUM_PROCESSORS);
-		if (numProcesses == null)
-			numProcesses = (int) (Runtime.getRuntime().availableProcessors() * .75);
-
 		// Parse the file structure for applicable files
 		List<FileInfo> fileInfos;
 		Long jobId = ApplicationProperties.getPropertyAsLong(ApplicationProperties.JOB_ID);
@@ -96,15 +96,9 @@ public class ConverterImpl implements Converter {
 			fileInfos = fileStructureWriter.getFileInfos();
 		}
 
-		// process metadata if its not a job only run
-		if (!ApplicationProperties.getPropertyAsBoolean(ApplicationProperties.PROCESS_JOB_ONLY)) {
-			processMetadata(numProcesses, fileInfos);
-		}
+		processMetadata(fileInfos);
 
-		// Only convert the files if there is no property for metadata only or if metadata only is set to false
-		if (!ApplicationProperties.getPropertyAsBoolean(ApplicationProperties.METADATA_ONLY)) {
-			convertFiles(numProcesses);
-		}
+		convertFiles();
 
 		logger.debug("!!!! Converter thread pool has terminated and the application completed. !!!!!");
 	}
@@ -123,17 +117,15 @@ public class ConverterImpl implements Converter {
 	/**
 	 * Process the metadata for the files represented by the collection of file info objects
 	 * using the number of provided processes.
-	 * 
-	 * @param numProcesses
+	 *
 	 * @param fileInfos
 	 * @throws InterruptedException 
 	 * @throws IOException 
 	 */
-	private void processMetadata(int numProcesses, List<FileInfo> fileInfos) throws IOException,
+	private void processMetadata(List<FileInfo> fileInfos) throws IOException,
 			InterruptedException {
 		AtomicInteger counter = new AtomicInteger();
 		// Build the metadata for each of the files
-		metadataExecutor.setCorePoolSize(1); // numProcesses
 		int fileInfoCount = fileInfoDAO.countByJob(job);
 		for (FileInfo fileInfo: fileInfos) {
 			executorThrottleBasic(metadataExecutor);
@@ -152,18 +144,19 @@ public class ConverterImpl implements Converter {
 		// let the metadata processing tasks live while the converter processes
 		metadataExecutor.setWaitForTasksToCompleteOnShutdown(true);
 		metadataExecutor.shutdown();
-		while (!metadataExecutor.getThreadPoolExecutor().isTerminated()) {}
+		while (!metadataExecutor.getThreadPoolExecutor().isTerminated()) {
+//			sleep(1000);
+		}
 
 	}
 
 	/**
 	 * Convert images using a number or threads
-	 * 
-	 * @param numProcesses
+	 *
 	 * @throws Exception
 	 */
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
-	private void convertFiles(int numProcesses) throws Exception {
+	private void convertFiles() throws Exception {
 		ExifTool exifTool = new ExifToolBuilder()
 				.withPoolSize(10)
 				.enableStayOpen()
@@ -176,7 +169,6 @@ public class ConverterImpl implements Converter {
 		List<String> filters = ApplicationProperties.getPropertyAsStringList(ApplicationProperties.FILTER_LIST);
 
 		logger.debug("targets: {} filters: {} metadataCount: {}", targets, filters, metadataCount);
-		converterExecutor.setCorePoolSize(numProcesses);
 
 		int count = 0;
 		for (Metadata metadata : metadataDAO.findByFileInfoJob(job)) {
@@ -192,7 +184,9 @@ public class ConverterImpl implements Converter {
 		// let the thread live while the converter processes
 		converterExecutor.setWaitForTasksToCompleteOnShutdown(true);
 		converterExecutor.shutdown();
-		while (!converterExecutor.getThreadPoolExecutor().isTerminated()) {}
+		while (!converterExecutor.getThreadPoolExecutor().isTerminated()) {
+//			sleep(1000);
+		}
 
 		exifTool.close();
 	}
@@ -225,7 +219,7 @@ public class ConverterImpl implements Converter {
 			throws InterruptedException {
 		BlockingQueue queue = executor.getThreadPoolExecutor().getQueue();
 		while (queue.size() > count) {
-			Thread.sleep(sleepSeconds * 1000);
+			sleep(sleepSeconds * 1000);
 		}
 	}
 

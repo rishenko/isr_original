@@ -1,5 +1,6 @@
 package com.astrodoorways.converter;
 
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +13,11 @@ public class ConverterTest {
 
 	@Autowired
 	private Converter converter;
+
+	@BeforeClass
+	public static void setup() {
+		ApplicationProperties.setProperty(ApplicationProperties.MAX_NUM_PROCESSORS, Integer.toString(Runtime.getRuntime().availableProcessors()));
+	}
 
 	//	@Test
 	public void conversionMercury() throws Exception {
@@ -74,6 +80,15 @@ public class ConverterTest {
 		String readDir = "src/test/resources/test-dirs/read/data/cassini_broken";
 		String writeDir = "src/test/resources/test-dirs/write/cassini_broken";
 		Converter converter = new ConverterImpl(readDir, writeDir);
+		converter.beginConversion();
+	}
+
+	@Test
+	public void conversionCassiniBatch() throws Exception {
+		String readDir = "/Users/kevinmcabee/sp/coiss_2098";
+		String writeDir = "/Users/kevinmcabee/sp/img_out";
+		converter.setReadDirectory(readDir);
+		converter.setWriteDirectory(writeDir);
 		converter.beginConversion();
 	}
 
