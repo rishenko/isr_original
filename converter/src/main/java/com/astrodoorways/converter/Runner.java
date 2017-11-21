@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -23,6 +24,9 @@ public class Runner implements CommandLineRunner {
     @Autowired
     private Converter converter;
 
+    @Autowired
+    private ConfigurableApplicationContext context;
+
     @Override
     public void run(String... args) throws Exception {
         converter.setReadDirectory(ApplicationProperties.getPropertyAsString(ApplicationProperties.READ_DIRECTORY_PROPERTY));
@@ -35,6 +39,7 @@ public class Runner implements CommandLineRunner {
         }
 
         logger.debug("The converter has finished. If the application is still running, feel free to kill it.");
+        context.close();
     }
 
 
