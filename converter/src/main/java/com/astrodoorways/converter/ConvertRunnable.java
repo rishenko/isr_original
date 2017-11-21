@@ -91,6 +91,7 @@ public class ConvertRunnable implements Runnable {
 
 			updateMetadata(converter.getOutputtedFilePaths());
 			postProcessImage();
+			logger.debug("finished converting {} - {}", filePath, completionMessage());
 		} catch (IllegalStateException e) {
 			String msg = e.getMessage();
 			if (msg.contains("image already exists")) {

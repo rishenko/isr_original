@@ -85,6 +85,7 @@ public class ConverterImpl implements Converter {
 		// Parse the file structure for applicable files
 		List<FileInfo> fileInfos;
 		Long jobId = ApplicationProperties.getPropertyAsLong(ApplicationProperties.JOB_ID);
+		logger.info("Begin building list of files to convert from read directory.");
 		if (jobId == null) {
 			job = buildAndPersistJob();
 			fileStructureWriter.setJob(job);
@@ -95,12 +96,15 @@ public class ConverterImpl implements Converter {
 			fileStructureWriter.setJob(job);
 			fileInfos = fileStructureWriter.getFileInfos();
 		}
-
+		logger.info("Finished building list of files to convert from read directory.");
+		logger.info("Begin processing metadata.");
 		processMetadata(fileInfos);
-
+		logger.info("Finished processing metadata.");
+		logger.info("Begin converting data to images.");
 		convertFiles();
+		logger.info("Finished converting data to images.");
 
-		logger.debug("!!!! Converter thread pool has terminated and the application completed. !!!!!");
+		logger.info("!!!! Conversion complete. You can kill the application. !!!!!");
 	}
 
 	/**
@@ -131,7 +135,7 @@ public class ConverterImpl implements Converter {
 			executorThrottleBasic(metadataExecutor);
 			preProcessImage(fileInfo);
 			// try to convert the image at least twice if there is a failure
-			logger.debug("adding a task to process metadata for: {}", fileInfo);
+			logger.trace("adding a task to process metadata for: {}", fileInfo);
 
 			MetadataProcessRunnable runnable = context.getBean(MetadataProcessRunnable.class);
 			runnable.setJob(fileInfo.getJob());
@@ -173,7 +177,7 @@ public class ConverterImpl implements Converter {
 		int count = 0;
 		for (Metadata metadata : metadataDAO.findByFileInfoJob(job)) {
 			executorThrottleBasic(converterExecutor);
-			logger.debug("adding sequence convert task: {}", metadata);
+			logger.trace("adding sequence convert task: {}", metadata);
 			ConvertRunnable runnable = context.getBean(ConvertRunnable.class);
 			prepConvertRunnable(exifTool, counter, metadataCount, metadata, runnable);
 			if (isSequence())

@@ -7,6 +7,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.util.FileSystemUtils;
+
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 @RunWith(SpringRunner.class)
 @ActiveProfiles("test")
@@ -89,6 +94,7 @@ public class ConverterTest {
 	public void conversionCassiniBatch() throws Exception {
 		String readDir = "/Users/kevinmcabee/sp/coiss_2098";
 		String writeDir = "/Users/kevinmcabee/sp/img_out";
+		FileSystemUtils.deleteRecursively(new File(writeDir));
 		converter.setReadDirectory(readDir);
 		converter.setWriteDirectory(writeDir);
 		converter.beginConversion();
@@ -98,6 +104,7 @@ public class ConverterTest {
 	public void conversionCassiniNeedsCalibrated() throws Exception {
 		String readDir = "./src/test/resources/test-dirs/read/data/cassini/needsCalib";
 		String writeDir = "./src/test/resources/test-dirs/write/data/cassini/needsCalib";
+		FileSystemUtils.deleteRecursively(new File(writeDir));
 		converter.setReadDirectory(readDir);
 		converter.setWriteDirectory(writeDir);
 		converter.beginConversion();
@@ -108,6 +115,7 @@ public class ConverterTest {
 		System.getProperties().setProperty(ApplicationProperties.SEQUENCE, "2012_CASS_TEST");
 		String readDir = "src/test/resources/test-dirs/read/data/cassini/calibrated/";
 		String writeDir = "src/test/resources/test-dirs/write/cassini/calibrated";
+		FileSystemUtils.deleteRecursively(new File(writeDir));
 		converter.setReadDirectory(readDir);
 		converter.setWriteDirectory(writeDir);
 		converter.beginConversion();

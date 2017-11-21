@@ -90,11 +90,8 @@ public class BaseMetadataProcessRunnable implements Runnable, MetadataProcessRun
 			logger.trace("going to read the image");
 			readImage(fileFinal);
 		} catch (Exception e) {
-			//			if (e.getStackTrace() != null && e.getStackTrace().length > 0)
-			//				logger.error("there was an error processing this file: " + filePath, e);
-			//			else
 			logger.error("there was an error processing the file and the exception has no stack: "
-					+ e.getClass().getCanonicalName());
+					+ e.getClass().getCanonicalName(), e);
 			return;
 		}
 
@@ -132,7 +129,7 @@ public class BaseMetadataProcessRunnable implements Runnable, MetadataProcessRun
 		metadata.setFileInfo(fileInfo);
 		metadataDAO.save(metadata);
 		logger.trace("Metadata: {} FileInfo: {}", metadata.getId(), fileInfo.getId());
-		logger.debug("finished processing metadata for {} - {}", filePath, completionMessage());
+		logger.debug("finished processing metadata for {} - {}", fileInfo.getFileName(), completionMessage());
 	}
 
 	/* (non-Javadoc)
@@ -184,7 +181,7 @@ public class BaseMetadataProcessRunnable implements Runnable, MetadataProcessRun
 	private String completionMessage() {
 		int counterVal = counter.incrementAndGet();
 		int percentComplete = (int) (((double) counterVal / (double) maxValue) * 100.0);
-		return String.format("converter is %d%% complete with %d out of %d processed", percentComplete, counterVal,
+		return String.format("metadata conversion is %d%% complete with %d out of %d processed", percentComplete, counterVal,
 				maxValue);
 	}
 
