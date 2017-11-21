@@ -149,7 +149,7 @@ public class ConverterImpl implements Converter {
 		metadataExecutor.setWaitForTasksToCompleteOnShutdown(true);
 		metadataExecutor.shutdown();
 		while (!metadataExecutor.getThreadPoolExecutor().isTerminated()) {
-//			sleep(1000);
+			sleep(1000);
 		}
 
 	}
@@ -189,7 +189,7 @@ public class ConverterImpl implements Converter {
 		converterExecutor.setWaitForTasksToCompleteOnShutdown(true);
 		converterExecutor.shutdown();
 		while (!converterExecutor.getThreadPoolExecutor().isTerminated()) {
-//			sleep(1000);
+			sleep(1000);
 		}
 
 		exifTool.close();
