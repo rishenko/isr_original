@@ -2,6 +2,10 @@
 converter/src/test/resources/calib
 converter/*.log
 
+### Mac
+.DS_Store
+
+
 
 ### Java template
 *.class
