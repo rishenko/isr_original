@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 
 public class FitsImageInputStreamWrapper extends InputStream {
 
-	Logger logger = LoggerFactory.getLogger(FitsImageInputStreamWrapper.class);
+	final Logger logger = LoggerFactory.getLogger(FitsImageInputStreamWrapper.class);
 	private final ImageInputStream stream;
 	private ByteBuffer byteBuffer;
 	private int streamLength = 0;

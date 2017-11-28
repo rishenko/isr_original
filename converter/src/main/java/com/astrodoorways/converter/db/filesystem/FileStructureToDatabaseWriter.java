@@ -7,8 +7,6 @@ import java.util.List;
 
 public interface FileStructureToDatabaseWriter {
 
-	public static final String SYSTEM_PERCENT_UTILIZATION = "system.percent.utilization";
-
 	/**
 	 * recursively move through the file structure found in file, writing out
 	 * the paths

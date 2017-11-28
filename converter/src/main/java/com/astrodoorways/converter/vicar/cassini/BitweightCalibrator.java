@@ -1,6 +1,5 @@
 package com.astrodoorways.converter.vicar.cassini;
 
-import com.astrodoorways.converter.converters.VicarImageConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,7 +15,7 @@ import javax.imageio.metadata.IIOMetadata;
 
 public class BitweightCalibrator extends AbstractBaseCalibrator {
 
-	Logger logger = LoggerFactory.getLogger(BitweightCalibrator.class);
+	private final Logger logger = LoggerFactory.getLogger(BitweightCalibrator.class);
 
 	private final String calibrationDirectory;
 
@@ -33,12 +32,16 @@ public class BitweightCalibrator extends AbstractBaseCalibrator {
 		if (encType.equals("TABLE") || encType.equals("LOSSY"))
 			return false;
 
-		if (instrument.equals("ISSNA"))
-			instrument = "NA";
-		else if (instrument.equals("ISSWA"))
-			instrument = "WA";
-		else
-			return false;
+		switch (instrument) {
+			case "ISSNA":
+				instrument = "NA";
+				break;
+			case "ISSWA":
+				instrument = "WA";
+				break;
+			default:
+				return false;
+		}
 
 		double[] calTemps = new double[] { -10, 5, 25 };
 		String opticsTemp = extractValue("OPTICS_TEMPERATURE", nodeString);
@@ -60,7 +63,7 @@ public class BitweightCalibrator extends AbstractBaseCalibrator {
 			fname = "nac";
 
 		String gainModeId = extractValue("GAIN_MODE_ID", nodeString);
-		int gainState = 0;
+		int gainState;
 		switch (gainModeId) {
 		case "1400K":
 		case "215 e/DN":
@@ -101,21 +104,22 @@ public class BitweightCalibrator extends AbstractBaseCalibrator {
 			// build bitweight table;
 			File btwFile = new File(calibrationDirectory + "/calib/bitweight/" + fname);
 			BufferedReader reader = new BufferedReader(new FileReader(btwFile));
-			String line = "";
+			String line;
 			boolean markFound = false;
 			List<Double> bitweightData = new ArrayList<>();
 			while ((line = reader.readLine()) != null) {
-				if (markFound == false && !line.trim().equals("\\begindata")) {
+				if (!markFound && !line.trim().equals("\\begindata")) {
 					continue;
-				} else if (markFound == false && line.trim().equals("\\begindata")) {
+				} else if (!markFound && line.trim().equals("\\begindata")) {
 					markFound = true;
 					continue;
 				}
-				String[] values = null;
-				if (line.indexOf(",") != -1)
+				String[] values;
+				if (line.contains(","))
 					values = line.trim().split(",");
 				else
 					values = line.trim().split(" ");
+
 				for (String strVal : values) {
 					bitweightData.add(Double.parseDouble(strVal));
 				}

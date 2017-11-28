@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 
 public class DivideByFlatsCalibrator extends AbstractBaseCalibrator {
 
-	Logger logger = LoggerFactory.getLogger(DivideByFlatsCalibrator.class);
+	private final Logger logger = LoggerFactory.getLogger(DivideByFlatsCalibrator.class);
 
 	private final String calibrationDirectory;
 
@@ -73,6 +73,9 @@ public class DivideByFlatsCalibrator extends AbstractBaseCalibrator {
 			}
 		}
 
+		if (slopeFile == null)
+			throw new IllegalStateException("slopeFile should never be null");
+
 		File slopeFileRef = new File(calibrationDirectory + "/calib/slope/" + slopeFile.toLowerCase());
 		BufferedImage slopeImage = readImage(slopeFileRef);
 
@@ -97,9 +100,7 @@ public class DivideByFlatsCalibrator extends AbstractBaseCalibrator {
 		//		double[] finalImageArrayCalc = new Matrix(imageArray, dimension).arrayRightDivide(
 		//				new Matrix(slopePixels, dimension)).getColumnPackedCopy();
 
-		for (int i = 0; i < imageArray.length; i++) {
-			imageArray[i] = finalImageArrayCalc[i];
-		}
+		System.arraycopy(finalImageArrayCalc, 0, imageArray, 0, imageArray.length);
 
 		return true;
 	}
@@ -132,8 +133,8 @@ public class DivideByFlatsCalibrator extends AbstractBaseCalibrator {
 		return A;
 	}
 
-	public List<SlopeFile> buildSlopeFileList() throws NumberFormatException, IOException {
-		List<SlopeFile> slopeFiles = new ArrayList<SlopeFile>();
+	private List<SlopeFile> buildSlopeFileList() throws NumberFormatException, IOException {
+		List<SlopeFile> slopeFiles = new ArrayList<>();
 		BufferedReader reader = new BufferedReader(new FileReader(new File(calibrationDirectory
 				+ "/calib/slope/slope_db_2.tab")));
 		boolean beginParsing = false;
@@ -153,7 +154,7 @@ public class DivideByFlatsCalibrator extends AbstractBaseCalibrator {
 		return slopeFiles;
 	}
 
-	public static class SlopeFile {
+	private static class SlopeFile {
 		private final String instrument;
 		private final String opticsTemp;
 		private final String filter1;
@@ -168,9 +169,7 @@ public class DivideByFlatsCalibrator extends AbstractBaseCalibrator {
 			this.instrument = instrument.replace("'", "");
 			this.opticsTemp = opticsTemp;
 			this.filter1 = filter1.replace("'", "");
-			;
 			this.filter2 = filter2.replace("'", "");
-			;
 			this.gainState = gainState;
 			this.antibloomingMode = antibloomingMode;
 			this.fileNumber = fileNumber;
@@ -219,18 +218,30 @@ public class DivideByFlatsCalibrator extends AbstractBaseCalibrator {
 
 		int gainState = 0;
 
-		if (gainModeId.equals("1400K") || gainModeId.equals("215 e/DN") || gainModeId.equals("215 ELECTRONS PER DN")) {
-			gainState = 0;
-		} else if (gainModeId.equals("400K") || gainModeId.equals("95 e/DN")
-				|| gainModeId.equals("95 ELECTRONS PER DN")) {
-			gainState = 1;
-		} else if (gainModeId.equals("100K") || gainModeId.equals("29 e/DN")
-				|| gainModeId.equals("29 ELECTRONS PER DN")) {
-			gainState = 2;
-		} else if (gainModeId.equals("40K") || gainModeId.equals("12 e/DN") || gainModeId.equals("12 ELECTRONS PER DN")) {
-			gainState = 3;
-		} else {
-			logger.debug("unexpected gain state value: {}", gainModeId);
+		switch (gainModeId) {
+			case "1400K":
+			case "215 e/DN":
+			case "215 ELECTRONS PER DN":
+				gainState = 0;
+				break;
+			case "400K":
+			case "95 e/DN":
+			case "95 ELECTRONS PER DN":
+				gainState = 1;
+				break;
+			case "100K":
+			case "29 e/DN":
+			case "29 ELECTRONS PER DN":
+				gainState = 2;
+				break;
+			case "40K":
+			case "12 e/DN":
+			case "12 ELECTRONS PER DN":
+				gainState = 3;
+				break;
+			default:
+				logger.debug("unexpected gain state value: {}", gainModeId);
+				break;
 		}
 
 		String lfFlag = extractValue("LIGHT_FLOOD_STATE_FLAG", nodeString);
@@ -285,18 +296,18 @@ public class DivideByFlatsCalibrator extends AbstractBaseCalibrator {
 		String calibrated = extractValue("CALIBRATION_STAGE", nodeString);
 	}
 
-	double ll_ll = 0;
-	double ll_l = 0;
-	double ll_r = 0;
-	double ll_rr = 0;
-	double l_ll = 0;
-	double l_rr = 0;
-	double u_rr = 0;
-	double u_ll = 0;
-	double uu_ll = 0;
-	double uu_l = 0;
-	double uu_r = 0;
-	double uu_rr = 0;
+	private double ll_ll = 0;
+	private double ll_l = 0;
+	private double ll_r = 0;
+	private double ll_rr = 0;
+	private double l_ll = 0;
+	private double l_rr = 0;
+	private double u_rr = 0;
+	private double u_ll = 0;
+	private double uu_ll = 0;
+	private double uu_l = 0;
+	private double uu_r = 0;
+	private double uu_rr = 0;
 	private double[] pixels;
 	private int width = 0;
 
@@ -309,6 +320,7 @@ public class DivideByFlatsCalibrator extends AbstractBaseCalibrator {
 		double xScale = (double) dstWidth / width;
 		double yScale = (double) dstHeight / width;
 
+		// TODO: Dig back into the IDL code to see when this can be false.
 		boolean interpolate = true;
 		if (interpolate) {
 			dstCenterX += xScale / 2.0;
@@ -359,7 +371,7 @@ public class DivideByFlatsCalibrator extends AbstractBaseCalibrator {
 	}
 
 	/** Uses bicubic interpolation to find the pixel value at real coordinates (x,y). */
-	private final double getInterpolatedPixel(double x, double y, double[] pixels) {
+	private double getInterpolatedPixel(double x, double y, double[] pixels) {
 		int xBase = (int) x;
 		int yBase = (int) y;
 		double xFraction = x - xBase;
@@ -437,8 +449,7 @@ public class DivideByFlatsCalibrator extends AbstractBaseCalibrator {
 		double ui = cubic(xFraction, u_ll, ul, ur, u_rr);
 		double uui = cubic(xFraction, uu_ll, uu_l, uu_r, uu_rr);
 		//Interpolate in the vertical direction
-		double result = cubic(yFraction, lli, li, ui, uui);
-		return result;
+		return cubic(yFraction, lli, li, ui, uui);
 	}
 
 	//Four point cubic interpolation, where it is assumed that the evaluation

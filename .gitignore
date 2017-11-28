@@ -1,3 +1,11 @@
+### Converter
+converter/src/test/resources/calib
+converter/*.log
+
+### Mac
+.DS_Store
+
+
 
 ### Java template
 *.class
@@ -216,4 +224,4 @@ buildNumber.properties
 
 # Avoid ignoring Maven wrapper jar file (.jar files are usually ignored)
 !/.mvn/wrapper/maven-wrapper.jar
-/converter/src/test/resources/test-dirs/write/data/cassini/needsCalib/2012/2/27/
+/converter/src/test/resources/test-dirs/write/

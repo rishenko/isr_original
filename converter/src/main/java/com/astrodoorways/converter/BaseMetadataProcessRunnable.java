@@ -29,7 +29,7 @@ import com.astrodoorways.converter.db.filesystem.Job;
 import com.astrodoorways.converter.db.imagery.Metadata;
 import com.astrodoorways.converter.db.imagery.MetadataDAO;
 
-@Component
+@Component("metadataProcessRunnable")
 @Scope("prototype")
 @Transactional(propagation = Propagation.REQUIRES_NEW)
 public class BaseMetadataProcessRunnable implements Runnable, MetadataProcessRunnable {
@@ -45,13 +45,12 @@ public class BaseMetadataProcessRunnable implements Runnable, MetadataProcessRun
 	private Job job;
 	private IIOMetadata metadata;
 	private AtomicInteger counter;
-	private MetadataProcessor metadataProcessor = new MetadataProcessor();
+	private final MetadataProcessor metadataProcessor = new MetadataProcessor();
 	private int maxValue;
 
-	Logger logger = LoggerFactory.getLogger(BaseMetadataProcessRunnable.class);
+	private Logger logger = LoggerFactory.getLogger(BaseMetadataProcessRunnable.class);
 
-	public BaseMetadataProcessRunnable() {
-	}
+	public BaseMetadataProcessRunnable() {}
 
 	public BaseMetadataProcessRunnable(Job job, FileInfo fileInfo, AtomicInteger counter, int maxValue) {
 		this.job = job;
@@ -91,11 +90,8 @@ public class BaseMetadataProcessRunnable implements Runnable, MetadataProcessRun
 			logger.trace("going to read the image");
 			readImage(fileFinal);
 		} catch (Exception e) {
-			//			if (e.getStackTrace() != null && e.getStackTrace().length > 0)
-			//				logger.error("there was an error processing this file: " + filePath, e);
-			//			else
 			logger.error("there was an error processing the file and the exception has no stack: "
-					+ e.getClass().getCanonicalName());
+					+ e.getClass().getCanonicalName(), e);
 			return;
 		}
 
@@ -133,7 +129,7 @@ public class BaseMetadataProcessRunnable implements Runnable, MetadataProcessRun
 		metadata.setFileInfo(fileInfo);
 		metadataDAO.save(metadata);
 		logger.trace("Metadata: {} FileInfo: {}", metadata.getId(), fileInfo.getId());
-		logger.debug("finished processing metadata for {} - {}", filePath, completionMessage());
+		logger.debug("finished processing metadata for {} - {}", fileInfo.getFileName(), completionMessage());
 	}
 
 	/* (non-Javadoc)
@@ -144,7 +140,7 @@ public class BaseMetadataProcessRunnable implements Runnable, MetadataProcessRun
 		logger.trace("creating input stream");
 		ImageInputStream stream = ImageIO.createImageInputStream(file);
 		logger.trace("getting image readers");
-		Iterator<ImageReader> readers = (Iterator<ImageReader>) ImageIO.getImageReaders(stream);
+		Iterator<ImageReader> readers = ImageIO.getImageReaders(stream);
 		if (!readers.hasNext()) {
 			logger.error("no image reader was found for {}", file.getAbsolutePath());
 			stream.close();
@@ -185,7 +181,7 @@ public class BaseMetadataProcessRunnable implements Runnable, MetadataProcessRun
 	private String completionMessage() {
 		int counterVal = counter.incrementAndGet();
 		int percentComplete = (int) (((double) counterVal / (double) maxValue) * 100.0);
-		return String.format("converter is %d%% complete with %d out of %d processed", percentComplete, counterVal,
+		return String.format("metadata conversion is %d%% complete with %d out of %d processed", percentComplete, counterVal,
 				maxValue);
 	}
 

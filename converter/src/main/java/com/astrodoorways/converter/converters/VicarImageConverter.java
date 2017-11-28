@@ -1,9 +1,9 @@
 package com.astrodoorways.converter.converters;
 
 import com.astrodoorways.converter.ApplicationProperties;
+import com.astrodoorways.converter.db.imagery.Metadata;
 import com.astrodoorways.converter.metadata.processor.MetadataProcessor;
 import com.astrodoorways.converter.vicar.cassini.*;
-import com.astrodoorways.converter.db.imagery.Metadata;
 import com.google.common.io.Files;
 import com.tomgibara.imageio.impl.tiff.TIFFLZWCompressor;
 import com.tomgibara.imageio.tiff.TIFFCompressor;
@@ -26,7 +26,6 @@ import java.nio.ByteOrder;
 import java.text.ParseException;
 import java.util.*;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Convert a Vicar/PDS formatted image into another image format.
@@ -37,25 +36,21 @@ public class VicarImageConverter {
 
     private final String inputFilePath;
     private final String writeDirectory;
-    //private BufferedImage image;
-    private BufferedImage inputImage;
-    private Metadata metadata;
-    private IIOMetadata iioMetadata;
+    private final Metadata metadata;
     private final String format;
-    private Integer seqCount;
-    double currentMaxPixel = 0.0;
-    private MetadataProcessor metadataProcessor = new MetadataProcessor();
-    private List<String> outputtedFilePaths = new ArrayList<String>();
+    private final Integer seqCount;
+    private final MetadataProcessor metadataProcessor = new MetadataProcessor();
+    private final List<String> outputtedFilePaths = new ArrayList<>();
+    private final Logger logger = LoggerFactory.getLogger(VicarImageConverter.class);
+    private IIOMetadata iioMetadata;
 
-    Logger logger = LoggerFactory.getLogger(VicarImageConverter.class);
-
-    public VicarImageConverter(Metadata metadata, Integer seqCount, String writeDirectory, String format,
-                               AtomicInteger counter) {
-        this(metadata, seqCount, writeDirectory, format, false);
-    }
-
-    public VicarImageConverter(Metadata metadata, Integer seqCount, String writeDirectory, String format,
-                               boolean stretch) {
+    /**
+     * @param metadata       the metadata describing the conversion info for this image
+     * @param seqCount       the sequence number of this image in the conversion pipeline
+     * @param writeDirectory the directory to write the outgoing image to
+     * @param format         the format of the output image
+     */
+    public VicarImageConverter(Metadata metadata, Integer seqCount, String writeDirectory, String format) {
         this.metadata = metadata;
         this.inputFilePath = metadata.getFileInfo().getFilePath();
         if (!writeDirectory.endsWith("/")) {
@@ -67,10 +62,12 @@ public class VicarImageConverter {
     }
 
     /**
-     * main convert method
+     * This performs the actual conversion of a VICAR based image, including any
+     * necessary calibration, post-processing, and writing the output to the
+     * filesystem.
      *
-     * @throws IOException
-     * @throws ParseException
+     * @throws IOException    issues with reading or writing image related files
+     * @throws ParseException issues related to building the filename
      */
     public void convert() throws IOException, ParseException {
         // open file with list of paths
@@ -81,182 +78,114 @@ public class VicarImageConverter {
         }
 
         logger.trace("reading in the image");
-        readImage(file);
-        Map<String, String> valueMap = metadataProcessor.process(iioMetadata);
+        BufferedImage inputImage = readImage(file);
 
-        writeSegmentedImage(inputImage, valueMap);
-        inputImage = null;
+        logger.trace("building iiometadata from image");
+        final Map<String, String> valueMap = buildMetadataMap(iioMetadata);
+
+        logger.trace("post processing and calibration of image");
+        inputImage = postProcessImage(buildOutputImage(inputImage), valueMap);
+
+        logger.trace("writing out image");
+        writeImage(inputImage);
     }
 
     /**
-     * Build a segmented image based on maximum width and height tiling values.
-     *
-     * @param inputImage
-     * @param valueMap
-     * @throws IOException
-     * @throws ParseException
+     * Create a map of key value pairs based on the provided IIOMetadata.
+     * @param iioMetadata   metadata used to build key/value map
+     * @return              map of key/value pairs based on IIOMetadata
      */
-    private void writeSegmentedImage(BufferedImage inputImage, Map<String, String> valueMap) throws IOException,
-            ParseException {
-        int width = inputImage.getWidth();
-        int height = inputImage.getHeight();
+    public Map<String,String> buildMetadataMap(IIOMetadata iioMetadata) {
+        return metadataProcessor.process(iioMetadata);
+    }
 
-        if (ApplicationProperties.getPropertyAsBoolean(ApplicationProperties.NORMALIZE)) {
-            normalize(inputImage, width, height);
+    private BufferedImage postProcessImage(BufferedImage image, Map<String, String> valueMap) throws IOException {
+        if (valueMap.get(MetadataProcessor.MISSION).startsWith("CAS")
+                && ApplicationProperties.hasProperty(ApplicationProperties.CASSINI_CALIBRATION_DIR)) {
+            logger.trace("calibrating");
+            return calibrateCassiniImages(image);
         }
+        return image;
+    }
 
-        // initial image prep
-        SampleModel sampleModel = new PixelInterleavedSampleModel(DataBuffer.TYPE_FLOAT, width, height,
+    /**
+     * Build the initial output image, specifically color and sample models.
+     *
+     * @param inputImage input image
+     * @return initial pass at output image
+     */
+    public BufferedImage buildOutputImage(BufferedImage inputImage) {
+        final int width = inputImage.getWidth();
+        final int height = inputImage.getHeight();
+
+        final SampleModel sampleModel = new PixelInterleavedSampleModel(DataBuffer.TYPE_FLOAT, width, height,
                 1, width, new int[1]);
-        ColorModel colorModel = new ComponentColorModel(ColorSpace.getInstance(ColorSpace.CS_GRAY), false,
+        final ColorModel colorModel = new ComponentColorModel(ColorSpace.getInstance(ColorSpace.CS_GRAY), false,
                 false, Transparency.OPAQUE, DataBuffer.TYPE_FLOAT);
 
         // build the output raster array and populate it
         double[] outputRasterArray = new double[width * height];
         outputRasterArray = inputImage.getRaster().getPixels(0, 0, width, height, outputRasterArray);
 
-        DataBuffer dataBuffer = new DataBufferDouble(outputRasterArray, outputRasterArray.length);
-        WritableRaster raster = Raster.createWritableRaster(sampleModel, dataBuffer, new Point(0, 0));
-        BufferedImage outputImage = new BufferedImage(colorModel, raster, false, null);
-
-        // post processing (calibration, normalizing, etc)
-        outputImage = postProcessImage(outputImage, valueMap);
-
-        // write out image
-        String path = generateOutputFilePath(width, height);
-        logger.trace("generating output path");
-        // see if file already exists before trying to recreate
-
-        // the image has already been created
-        if (new File(path).exists()) {
-            throw new IllegalStateException("image already exists: " + path);
-        }
-        writeImage(outputImage, path);
-        outputtedFilePaths.add(path);
-    }
-
-    private void normalize(BufferedImage inputImage, int width, int height) {
-        logger.debug("find the the maximum light value for the image");
-        Raster raster = inputImage.getRaster();
-        for (int x = 0; x < width; x++) {
-            for (int y = 0; y < height; y++) {
-                double[] pixel = raster.getPixel(x, y, new double[1]);
-                if (pixel[0] > currentMaxPixel)
-                    currentMaxPixel = pixel[0];
-            }
-        }
-        logger.debug("maximum light value: {}", currentMaxPixel);
+        final DataBuffer dataBuffer = new DataBufferDouble(outputRasterArray, outputRasterArray.length);
+        final WritableRaster raster = Raster.createWritableRaster(sampleModel, dataBuffer, new Point(0, 0));
+        return new BufferedImage(colorModel, raster, false, null);
     }
 
     /**
-     * Normalize an image against its highest light value. Only accepts BufferedImages with DataBufferDouble buffers.
+     * Perform all Cassini related image calibrations.
      *
-     * @param image
-     * @return
+     * @param image the image to be calibrated
+     * @return a calibrated version of the image
+     * @throws IOException issues related to reading calibration related files
      */
-    private BufferedImage normalizeDouble(BufferedImage image) {
-        if (!(image.getRaster().getDataBuffer() instanceof DataBufferDouble))
-            throw new IllegalArgumentException("can't normalize a non-double based buffered image");
-
-        int width = image.getWidth();
-        int height = image.getHeight();
-        int bitDepthExp = image.getColorModel().getPixelSize();
-
-        double bitDepth = (double) (1 << bitDepthExp);
-        DataBufferDouble doubleBuffer = (DataBufferDouble) image.getRaster().getDataBuffer();
-        double[] rasterArray = doubleBuffer.getData();
-        inputImage = null;
-
-        // actual normalization process
-
-        double finalDivisor = bitDepth;
-        if (currentMaxPixel != 1) {
-            for (int i = 0; i < rasterArray.length; i++) {
-                rasterArray[i] = rasterArray[i] > 0.0 ? rasterArray[i] / finalDivisor : 0.0;
-            }
-        }
-
-        SampleModel sampleModel = new PixelInterleavedSampleModel(DataBuffer.TYPE_FLOAT, width, height, 1, width,
-                new int[1]);
-        ColorModel colorModel = new ComponentColorModel(ColorSpace.getInstance(ColorSpace.CS_GRAY), false, false,
-                Transparency.OPAQUE, DataBuffer.TYPE_FLOAT);
-        DataBuffer dataBuffer = new DataBufferDouble(rasterArray, rasterArray.length);
-        WritableRaster raster = Raster.createWritableRaster(sampleModel, dataBuffer, new Point(0, 0));
-        image = new BufferedImage(colorModel, raster, false, null);
-        return image;
-    }
-
-    private BufferedImage postProcessImage(BufferedImage image, Map<String, String> valueMap) {
-        if (valueMap.get(MetadataProcessor.MISSION).startsWith("CAS")
-                && ApplicationProperties.hasProperty(ApplicationProperties.CASSINI_CALIBRATION_DIR)) {
-            logger.trace("calibrating");
-            try {
-                return calibrate(image);
-            } catch (Exception e) {
-                logger.error("calibration failed", e);
-            }
-        } else {
-            logger.trace("standard normalizing");
-            if (ApplicationProperties.getPropertyAsBoolean(ApplicationProperties.NORMALIZE)) {
-                return normalizeDouble(image);
-            }
-        }
-        return image;
-    }
-
-    public BufferedImage calibrate(BufferedImage image) throws IOException {
-        int width = image.getWidth();
-        int height = image.getHeight();
-        logger.trace("getting raster array");
+    public BufferedImage calibrateCassiniImages(BufferedImage image) throws IOException {
+        final int width = image.getWidth();
+        final int height = image.getHeight();
 
         logger.trace("getting cassini calibration directory");
-        String cassiniCalibrationDirectory = ApplicationProperties.getPropertyAsString("cassini.calibration.dir");
+        final String cassCalibDir = ApplicationProperties.getPropertyAsString("cassini.calibration.dir");
 
-        double[] rasterArray = image.getRaster().getPixels(0, 0, width, height, new double[width * height]);
+        final double[] rasterArray = image.getRaster().getPixels(0, 0, width, height, new double[width * height]);
 
+        boolean isCalibrated;
         logger.trace("lut 8to12 calibration");
-        Lut8to12BitCalibrator lutCalibrator = new Lut8to12BitCalibrator();
-        boolean lut = lutCalibrator.calibrate(rasterArray, iioMetadata);
+        boolean isCalibratedLut = isCalibrated = new Lut8to12BitCalibrator().calibrate(rasterArray, iioMetadata);
 
         logger.trace("bitweight calibration");
-        BitweightCalibrator bwCalibrator = new BitweightCalibrator(cassiniCalibrationDirectory);
-        boolean bw = bwCalibrator.calibrate(rasterArray, iioMetadata);
+        isCalibrated = isCalibrated || new BitweightCalibrator(cassCalibDir).calibrate(rasterArray, iioMetadata);
 
         logger.trace("debias calibration");
-        DebiasCalibrator debiasCalibrator = new DebiasCalibrator();
-        boolean de = debiasCalibrator.calibrate(rasterArray, iioMetadata);
+        isCalibrated = isCalibrated || new DebiasCalibrator().calibrate(rasterArray, iioMetadata);
 
         logger.trace("dust calibration");
-        CassiniDustRingCalibrator cassiniCalibrator = new CassiniDustRingCalibrator(cassiniCalibrationDirectory);
-        boolean ca = cassiniCalibrator.calibrate(rasterArray, iioMetadata);
+        isCalibrated = isCalibrated || new CassiniDustRingCalibrator(cassCalibDir).calibrate(rasterArray, iioMetadata);
 
         logger.trace("divide by flats calibration");
-        DivideByFlatsCalibrator divideByFlatsCalibrator = new DivideByFlatsCalibrator(cassiniCalibrationDirectory);
-        boolean dbf = divideByFlatsCalibrator.calibrate(rasterArray, iioMetadata);
+        isCalibrated = isCalibrated || new DivideByFlatsCalibrator(cassCalibDir).calibrate(rasterArray, iioMetadata);
 
-        BufferedImage imageNew = buildImagePostCalibration(width, height, rasterArray, lut, bw, de, ca, dbf);
-        return imageNew;
+        return buildImagePostCalibration(width, height, rasterArray, isCalibrated, isCalibratedLut);
     }
 
-    private BufferedImage buildImagePostCalibration(int width, int height, double[] rasterArray, boolean lut, boolean bw, boolean de, boolean ca, boolean dbf) {
+    private BufferedImage buildImagePostCalibration(int width, int height, double[] rasterArray, boolean isCalibrated, boolean isCalibratedLut) {
         BufferedImage imageNew;
-        if (bw || de || ca || dbf) {
+        if (isCalibrated) {
             logger.trace("{} has been CALIBRATED", inputFilePath);
 
-            boolean needsNormalized = Arrays.stream(rasterArray).anyMatch((val)->val>1.0d);
+            boolean needsNormalized = Arrays.stream(rasterArray).anyMatch((val) -> val > 1.0d);
             if (needsNormalized) {
-                double bitDivisor = lut ? 1 << 12 : 1 << 16;
+                double bitDivisor = isCalibratedLut ? 1 << 12 : 1 << 16;
                 for (int i = 0; i < rasterArray.length; i++) {
                     rasterArray[i] = rasterArray[i] / bitDivisor;
                 }
                 logger.trace("{} has been NORMALIZED with bit depth of {}", new Object[]{inputFilePath, bitDivisor});
             }
 
-            DataBuffer dataBuffer = new DataBufferDouble(rasterArray, rasterArray.length);
-            SampleModel sampleModel = new PixelInterleavedSampleModel(DataBuffer.TYPE_FLOAT, width, height, 1, width,
+            final DataBuffer dataBuffer = new DataBufferDouble(rasterArray, rasterArray.length);
+            final SampleModel sampleModel = new PixelInterleavedSampleModel(DataBuffer.TYPE_FLOAT, width, height, 1, width,
                     new int[1]);
-            WritableRaster raster = Raster.createWritableRaster(sampleModel, dataBuffer, new Point(0, 0));
-            ColorModel colorModel = new ComponentColorModel(ColorSpace.getInstance(ColorSpace.CS_GRAY), false, false,
+            final WritableRaster raster = Raster.createWritableRaster(sampleModel, dataBuffer, new Point(0, 0));
+            final ColorModel colorModel = new ComponentColorModel(ColorSpace.getInstance(ColorSpace.CS_GRAY), false, false,
                     Transparency.OPAQUE, DataBuffer.TYPE_FLOAT);
             imageNew = new BufferedImage(colorModel, raster, false, null);
         } else {
@@ -268,148 +197,173 @@ public class VicarImageConverter {
 
     /**
      * @return a path to the file with all necessary directories created
-     * @throws ParseException
+     * @throws ParseException issues related to building the filename from metadata
      */
-    private String generateOutputFilePath(int w, int h) throws ParseException {
-        String sep = "/";
-        String outputtedFilePath = writeDirectory + sep;
+    public String generateOutputFilePath(int w, int h) throws ParseException {
+        final String sep = "/";
+        StringBuilder outputtedFilePath = new StringBuilder(writeDirectory);
         if (seqCount == null) {
-            outputtedFilePath += metadataProcessor.getFileStructure() + sep + metadataProcessor.getFileName();
+            outputtedFilePath.append(metadataProcessor.getFileStructure())
+                    .append(sep)
+                    .append(metadataProcessor.getFileName());
         } else {
-            // BUILD DIRECTORY
-            outputtedFilePath += metadata.getMission().replace("/", "-") + "_" + metadata.getTarget() + "_"
-                    + metadata.getFilterOne();
-
-            // not all missions have a seondary filter for the cameras
-            if (metadata.getFilterTwo() != null)
-                outputtedFilePath += "-" + metadata.getFilterTwo();
-
-            outputtedFilePath += sep;
-
-            // BUILD FILENAME
-            String sequence = seqCount.toString();
-            sequence = "0000000000".substring(sequence.length()) + sequence;
-            outputtedFilePath += metadata.getMission().replace("/", "-") + "_" + metadata.getTarget() + "_"
-                    + metadata.getFilterOne();
-
-            // not all missions have a seondary filter for the cameras
-            if (metadata.getFilterTwo() != null)
-                outputtedFilePath += "-" + metadata.getFilterTwo();
-
-            outputtedFilePath += "_" + sequence;
+            buildSequenceOutputFilePath(sep, outputtedFilePath);
         }
-        outputtedFilePath += "w" + w + "-h" + h + "." + format;
+
+        outputtedFilePath.append("w").append(w)
+                .append("-h").append(h)
+                .append(".").append(format);
+
         try {
-            Files.createParentDirs(new File(outputtedFilePath));
+            Files.createParentDirs(new File(outputtedFilePath.toString()));
         } catch (IOException e) {
             logger.error("problem creating directory for " + outputtedFilePath, e);
             throw new RuntimeException("problem creating directory for " + outputtedFilePath, e);
         }
 
-        return outputtedFilePath;
+        return outputtedFilePath.toString();
     }
 
     /**
-     * write the image
-     *
-     * @throws IOException
+     * Build output file path for an image being converted in a sequence of images.
+     * @param sep               the separator for the system's file structure
+     * @param outputtedFilePath the output file path for the image
      */
-    public void writeImage(BufferedImage image, String outputtedFilePath) throws IOException {
-        File output = new File(outputtedFilePath);
+    private void buildSequenceOutputFilePath(String sep, StringBuilder outputtedFilePath) {
+        // BUILD DIRECTORY
+        outputtedFilePath.append(metadata.getMission().replace("/", "-"))
+            .append("_")
+            .append(metadata.getTarget())
+            .append("_")
+            .append(metadata.getFilterOne());
+
+        // not all missions have a secondary filter for the cameras
+        if (metadata.getFilterTwo() != null)
+            outputtedFilePath.append("-").append(metadata.getFilterTwo());
+
+        // BUILD FILENAME
+        outputtedFilePath.append(sep);
+        outputtedFilePath.append(metadata.getMission().replace("/", "-")).append("_")
+                .append(metadata.getTarget())
+                .append("_")
+                .append(metadata.getFilterOne());
+
+        // not all missions have a seondary filter for the cameras
+        if (metadata.getFilterTwo() != null)
+            outputtedFilePath.append(metadata.getFilterTwo());
+
+        String sequence = seqCount.toString();
+        sequence = "0000000000".substring(sequence.length()) + sequence;
+        outputtedFilePath.append("_").append(sequence);
+    }
+
+    /**
+     * Write the output image to the filesystem.
+     *
+     * @param image             the finalized image to be written
+     * @throws IOException issues related to writing the image file
+     */
+    public void writeImage(BufferedImage image) throws IOException, ParseException {
+        // write out image
+        final int width = image.getWidth();
+        final int height = image.getHeight();
+        final String outputtedFilePath = generateOutputFilePath(width, height);
+        logger.trace("generating output path");
+
+        // the image has already been created
+        if (new File(outputtedFilePath).exists()) {
+            throw new IllegalStateException("image already exists: " + outputtedFilePath);
+        }
+        final File output = new File(outputtedFilePath);
 
         // get the writer
-        Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName(format);
+        final Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName(format);
         if (!writers.hasNext()) {
-            logger.error("we could not find a writer. make no changes and do not attempt to convert the image");
-            throw new IllegalStateException("could not find a writer");
+            throw new IllegalStateException("could not find a writer, made no changes and do not attempt to convert the image: " + outputtedFilePath);
         }
 
-        ImageWriter writer = writers.next();
-
-        // delete the old file and create a new output stream to it
         ImageOutputStream stream = null;
+        final ImageWriter writer = writers.next();
         try {
-            output.delete();
+            boolean isDeleted = output.delete();
+            if (isDeleted) logger.trace("file deleted in prep for writing: {}", outputtedFilePath);
             Files.createParentDirs(output);
             logger.trace("writing the converted image to {}", outputtedFilePath);
-            output.createNewFile();
+            boolean isCreated = output.createNewFile();
+            if (!isCreated) throw new IOException("couldn't create file for writing image: " + outputtedFilePath);
             stream = ImageIO.createImageOutputStream(output);
 
             // setting the byte order to be the more standard PC format
             stream.setByteOrder(ByteOrder.LITTLE_ENDIAN);
             doWrite(image, writer, stream);
+
+            outputtedFilePaths.add(outputtedFilePath);
         } catch (IOException e) {
             logger.error("image writing failed", e);
             throw e;
         } finally {
-            stream.flush();
-            writer.dispose();
-            stream.close();
+            if (stream != null) {
+                stream.flush();
+                writer.dispose();
+                stream.close();
+            }
         }
     }
 
     /**
      * Writes image to output stream using given image writer.
      */
-    private boolean doWrite(RenderedImage im, ImageWriter writer, ImageOutputStream output) throws IOException {
-        if (writer == null) {
-            return false;
-        }
+    private void doWrite(RenderedImage im, ImageWriter writer, ImageOutputStream output) throws IOException {
         writer.setOutput(output);
-        TIFFImageWriteParam imageWriteParam = new TIFFImageWriteParam(null);
-        TIFFCompressor compressor = new TIFFLZWCompressor(0);
-        imageWriteParam.setCompressionMode(imageWriteParam.MODE_EXPLICIT);
+        final TIFFImageWriteParam imageWriteParam = new TIFFImageWriteParam(null);
+        final TIFFCompressor compressor = new TIFFLZWCompressor(0);
+        imageWriteParam.setCompressionMode(TIFFImageWriteParam.MODE_EXPLICIT);
         imageWriteParam.setTIFFCompressor(compressor);
         imageWriteParam.setCompressionType(compressor.getCompressionType());
         writer.write(iioMetadata, new IIOImage(im, null, iioMetadata), imageWriteParam);
-        return true;
     }
 
     /**
-     * stretch the histogram of the image
-     */
-    public void stretchHistogram(BufferedImage image) {
-        Double maxValue = Math.pow(2.0d, (double) image.getColorModel().getPixelSize());
-        float scaleFactor = (float) (maxValue / (((float) image.getHeight()) * ((float) image.getWidth()))) + 1f;
-        RescaleOp rescaleOp = new RescaleOp(scaleFactor, 0, null);
-        rescaleOp.filter(image, image);
-    }
-
-    /**
-     * read a file and convert it into an image, acquiring the metadata along
-     * the way
+     * Read an image data and metadata.
      *
-     * @param file
-     * @throws IOException
+     * @param file the image to be read
+     * @return the read image
+     * @throws IOException any issues related to reading the image
      */
-    public void readImage(File file) throws IOException {
-        Iterator<ImageReader> readers = ImageIO.getImageReaders(ImageIO.createImageInputStream(file));
+    public BufferedImage readImage(File file) throws IOException {
+        final Iterator<ImageReader> readers = ImageIO.getImageReaders(ImageIO.createImageInputStream(file));
         if (!readers.hasNext()) {
             logger.error("no image reader was found for {}", inputFilePath);
             throw new RuntimeException("no image reader was found for " + inputFilePath);
         }
 
         ImageReader reader = null;
+        BufferedImage image;
         try {
             reader = readers.next();
             reader.setInput(ImageIO.createImageInputStream(file));
-            inputImage = reader.read(0);
+            image = reader.read(0);
             iioMetadata = reader.getImageMetadata(0);
         } catch (IOException e) {
             throw e;
         } finally {
-            reader.dispose();
+            if (reader != null) reader.dispose();
         }
+
+        return image;
     }
 
     /**
-     * @return the metadata object. this should only be called after convert
+     * @return the original image's metadata
      */
     public IIOMetadata getIIOMetaData() {
         return iioMetadata;
     }
+
+    /**
+     * @return the path to the finalized output image
+     */
     public List<String> getOutputtedFilePaths() {
         return outputtedFilePaths;
     }
-
 }

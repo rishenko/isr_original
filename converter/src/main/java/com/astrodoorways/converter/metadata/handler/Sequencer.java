@@ -10,7 +10,7 @@ import java.util.Map;
  *
  */
 public class Sequencer {
-	private static final Map<String, Integer> map = new HashMap<String, Integer>();
+	private static final Map<String, Integer> map = new HashMap<>();
 
 	/**
 	 * Pass in an ordered set of strings repreesnting a specific sequence and receive

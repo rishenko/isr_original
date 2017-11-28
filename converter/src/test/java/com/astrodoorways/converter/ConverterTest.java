@@ -1,21 +1,30 @@
 package com.astrodoorways.converter;
 
-import com.astrodoorways.converter.ApplicationProperties;
-import com.astrodoorways.converter.Converter;
-import com.astrodoorways.converter.ConverterImpl;
-import com.astrodoorways.converter.RunConverter;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.util.FileSystemUtils;
+
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 @RunWith(SpringRunner.class)
+@ActiveProfiles("test")
 @SpringBootTest(classes = RunConverter.class)
 public class ConverterTest {
 
 	@Autowired
 	private Converter converter;
+
+	@BeforeClass
+	public static void setup() {
+		ApplicationProperties.setProperty(ApplicationProperties.MAX_NUM_PROCESSORS, Integer.toString(Runtime.getRuntime().availableProcessors()));
+	}
 
 	//	@Test
 	public void conversionMercury() throws Exception {
@@ -82,9 +91,20 @@ public class ConverterTest {
 	}
 
 	@Test
+	public void conversionCassiniBatch() throws Exception {
+		String readDir = "/Users/kevinmcabee/sp/coiss_2098";
+		String writeDir = "/Users/kevinmcabee/sp/img_out";
+		FileSystemUtils.deleteRecursively(new File(writeDir));
+		converter.setReadDirectory(readDir);
+		converter.setWriteDirectory(writeDir);
+		converter.beginConversion();
+	}
+
+	@Test
 	public void conversionCassiniNeedsCalibrated() throws Exception {
 		String readDir = "./src/test/resources/test-dirs/read/data/cassini/needsCalib";
 		String writeDir = "./src/test/resources/test-dirs/write/data/cassini/needsCalib";
+		FileSystemUtils.deleteRecursively(new File(writeDir));
 		converter.setReadDirectory(readDir);
 		converter.setWriteDirectory(writeDir);
 		converter.beginConversion();
@@ -95,6 +115,7 @@ public class ConverterTest {
 		System.getProperties().setProperty(ApplicationProperties.SEQUENCE, "2012_CASS_TEST");
 		String readDir = "src/test/resources/test-dirs/read/data/cassini/calibrated/";
 		String writeDir = "src/test/resources/test-dirs/write/cassini/calibrated";
+		FileSystemUtils.deleteRecursively(new File(writeDir));
 		converter.setReadDirectory(readDir);
 		converter.setWriteDirectory(writeDir);
 		converter.beginConversion();

@@ -16,7 +16,7 @@ public class CassiniHandler extends AbstractVicarHandler {
 
 	@Override
 	public Map<String, String> buildValueMapFromMetadata(Node node) {
-		Map<String, String> valueMap = new HashMap<String, String>();
+		Map<String, String> valueMap = new HashMap<>();
 		String nodeString = node.getLastChild().getLastChild().getAttributes().item(2).getNodeValue();
 		valueMap.put(EXPOSURE, extractValue("EXPOSURE_DURATION", nodeString));
 		String time = extractValue("IMAGE_TIME", nodeString);
@@ -32,7 +32,7 @@ public class CassiniHandler extends AbstractVicarHandler {
 		return valueMap;
 	}
 
-	public void processFilter(String nodeString, Map<String, String> valueMap) {
+	private void processFilter(String nodeString, Map<String, String> valueMap) {
 		String filter = extractValue("FILTER_NAME", nodeString);
 		if (!Strings.isNullOrEmpty(filter)) {
 			filter = filter.replace(",", "-");

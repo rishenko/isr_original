@@ -10,8 +10,8 @@ public class Job {
 	private Long id;
 	private String name;
 	private Date date;
-	private List<FileInfo> files = new ArrayList<FileInfo>();
-	private List<JobParam> params = new ArrayList<JobParam>();
+	private List<FileInfo> files = new ArrayList<>();
+	private List<JobParam> params = new ArrayList<>();
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO, generator = "job_dto_seq_gen")
@@ -66,8 +66,7 @@ public class Job {
 		}
 
 		Job toCheck = (Job) obj;
-		boolean isEqual = true;
-		isEqual = isEqual && basicEqualityTest(name, toCheck.getName());
+		boolean isEqual = basicEqualityTest(name, toCheck.getName());
 		isEqual = isEqual && basicEqualityTest(date, toCheck.getDate());
 		isEqual = isEqual && basicEqualityTest(id, toCheck.getId());
 

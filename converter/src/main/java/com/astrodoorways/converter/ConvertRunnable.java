@@ -77,7 +77,7 @@ public class ConvertRunnable implements Runnable {
 		}
 		try {
 			logger.trace("about to convert image {} to type {}", metadata.getFileInfo(), type);
-			VicarImageConverter converter = new VicarImageConverter(metadata, seqCount, writeDirectory, type, counter);
+			VicarImageConverter converter = new VicarImageConverter(metadata, seqCount, writeDirectory, type);
 			converter.convert();
 
 			logger.trace("converted image {}", converter.getOutputtedFilePaths().toArray());
@@ -91,37 +91,23 @@ public class ConvertRunnable implements Runnable {
 
 			updateMetadata(converter.getOutputtedFilePaths());
 			postProcessImage();
-		} catch (IllegalStateException e) {
-			String msg = e.getMessage();
-			if (msg.contains("image already exists")) {
-				logger.debug("{} - {}", msg, completionMessage());
-				return;
-			} else {
-				logger.error("unknown state exception error", e);
-			}
-		} catch (ParseException e) {
-			logger.error("error  parsing the date", e);
-		} catch (IOException e) {
-			logger.error("there was a problem converting the file " + filePath, e);
+			logger.debug("finished converting {} - {}", filePath, completionMessage());
 		} catch (Exception e) {
-			try {
-				logger.error("an unknown error {}", e);
-			} catch (EmptyStackException ee) {
-				logger.error("empty stack issue with {}", e.getClass());
-			}
+			String errMsg = "failed to convert " + filePath + " - " + completionMessage();
+			logger.error(errMsg, e);
 		}
 	}
 
 	private void updateMetadata(List<String> outputtedFilePaths) {
 		FileInfo fileInfo = metadata.getFileInfo();
-		String outputPathList = "";
+		StringBuilder outputPathList = new StringBuilder();
 		for (String path : outputtedFilePaths) {
-			outputPathList += path + ":::";
+			outputPathList.append(path).append(":::");
 		}
 		if (outputPathList.length() > 2048)
-			outputPathList = outputPathList.substring(0, 2040) + "...";
+			outputPathList = new StringBuilder(outputPathList.substring(0, 2040) + "...");
 
-		fileInfo.setOutputFileName(outputPathList);
+		fileInfo.setOutputFileName(outputPathList.toString());
 		fileInfoDAO.save(fileInfo);
 	}
 
@@ -153,25 +139,29 @@ public class ConvertRunnable implements Runnable {
 
 	public String getOutputFilePath() throws Exception {
 		if (filePath == null) {
-			filePath = metadata.getTarget() + "_" + metadata.getMission() + "_" + metadata.getFilterOne() + "-"
-					+ metadata.getFilterTwo();
+			StringBuilder path = new StringBuilder(metadata.getTarget())
+					.append("_")
+					.append(metadata.getMission())
+					.append("_")
+					.append(metadata.getFilterOne())
+					.append("_")
+					.append(metadata.getFilterTwo());
 			if (seqCount != null) {
-				filePath += "_" + seqCount;
+				path.append("_").append(seqCount);
 			} else {
-				filePath += convertVicarDateToTimestamp(metadata.getTime());
+				path.append(convertVicarDateToTimestamp(metadata.getTime()));
 			}
-			filePath += "." + type;
+			path.append(".").append(type);
+			filePath = path.toString();
 		}
 		return filePath;
-
 	}
 
 	public final SimpleDateFormat VICAR_FORMATTER = new SimpleDateFormat("yyyy-DDD'T'HH:mm:ss.SSS'Z'");
 	public final SimpleDateFormat TIMESTAMP_FORMATTER = new SimpleDateFormat("yyyyMMddhhmmssSSS");
 
-	public String convertVicarDateToTimestamp(Date date) throws ParseException {
-		String finalDate = TIMESTAMP_FORMATTER.format(date);
-		return finalDate;
+	public String convertVicarDateToTimestamp(Date date) {
+		return TIMESTAMP_FORMATTER.format(date);
 	}
 
 	public Integer getSeqCount() {
