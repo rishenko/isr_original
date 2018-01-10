@@ -16,10 +16,7 @@ import java.io.File;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.EmptyStackException;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Component
@@ -77,19 +74,21 @@ public class ConvertRunnable implements Runnable {
 		}
 		try {
 			logger.trace("about to convert image {} to type {}", metadata.getFileInfo(), type);
-			VicarImageConverter converter = new VicarImageConverter(metadata, seqCount, writeDirectory, type);
+			VicarImageConverter converter = new VicarImageConverter(metadata, seqCount, writeDirectory, type, counter);
 			converter.convert();
 
-			logger.trace("converted image {}", converter.getOutputtedFilePaths().toArray());
+			List<String> outputtedFilePaths = new ArrayList<>();
+			outputtedFilePaths.add(converter.getOutputtedFilePath());
+			logger.trace("converted image {}", outputtedFilePaths);
 			// exif is an expensive operation, only use on smaller files, add override somehow
 			if (new File(getOutputFilePath()).length() < maxFileSizeForExif) {
 				VicarThreadedJEXIFConverter exifConverter = new VicarThreadedJEXIFConverter(exifTool);
-				for (String path : converter.getOutputtedFilePaths()) {
+				for (String path : outputtedFilePaths) {
 					exifConverter.convert(path, converter.getIIOMetaData());
 				}
 			}
 
-			updateMetadata(converter.getOutputtedFilePaths());
+			updateMetadata(outputtedFilePaths);
 			postProcessImage();
 			logger.debug("finished converting {} - {}", filePath, completionMessage());
 		} catch (Exception e) {

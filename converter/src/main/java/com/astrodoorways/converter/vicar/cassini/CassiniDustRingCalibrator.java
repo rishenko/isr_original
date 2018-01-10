@@ -22,34 +22,30 @@ public class CassiniDustRingCalibrator extends AbstractBaseCalibrator {
 		this.calibrationDirectory = calibrationDirectory;
 	}
 
-	// STATIC REFERENCE TABLES
-	private static final List<EffwlHolder> LOOKUP_TABLE = buildLookupTable();
-	private static final List<String> POSSIBLE_FILTERS = Arrays.asList(
-			"UV1", "UV2", "UV3", "BL1", "BL2", "GRN", "RED", "IR1", "IR2",
-			"IR3", "IR4", "CB1", "CB2", "CB3", "MT1", "MT2", "MT3", "CLR");
-	private static final double[] SFACTS = new double[] {
-			1.199, 1.186, 1.069, 1.00, 0.833, 0.890, 0.843, 0.997, 0.897,
-			0.505, 0.780, 0.764, 0.781, 0.608, 0.789, 0.722, 0.546, 0.763 };
-
 	public boolean calibrate(double[] imageArray, IIOMetadata metadata) throws IOException {
 		Node node = metadata.getAsTree(METADATAFORMAT);
 		String nodeString = node.getLastChild().getLastChild().getAttributes().item(2).getNodeValue();
 
-		String sum = extractValue("INSTRUMENT_MODE_ID", nodeString);
-		if (sum.equals("SUM2")) {
-			// TODO: Write code for IDL - if sum eq 'SUM2' then dustCorr = rebin(dustCorr, 512,512)
-		} else if (sum.equals("SUM4")) {
-			// TODO: Write code for IDL - if sum eq 'SUM4' then dustCorr = rebin(dustCorr, 256,256)
+		String instrument = "ISSNA";
+		if (!instrument.equals("ISSNA")) {
+			return false;
 		}
 
-		removeDust(imageArray);
+		String sum = extractValue("INSTRUMENT_MODE_ID", nodeString);
+		if (sum.equals("SUM2")) {
+			//			if sum eq 'SUM2' then dustCorr = rebin(dustCorr, 512,512)
+		} else if (sum.equals("SUM4")) {
+			//			if sum eq 'SUM4' then dustCorr = rebin(dustCorr, 256,256)
+		}
+
+		removeDust(imageArray, nodeString, sum);
 		processMottling(imageArray, nodeString, sum);
 
 		return true;
 	}
 
-	private void removeDust(double[] imageArray) throws IOException {
-		File file = new File(calibrationDirectory + "/calib/dustring/nac_dustring_1308947228.img"); // VENUS image
+	public boolean removeDust(double[] imageArray, String nodeString, String sum) throws IOException {
+		File file = new File(calibrationDirectory + "/calib/dustring/nac_dustring_1308947228.img");
 		double[] dustCorrArray = readImageAsDoubleArray(file);
 
 		for (int i = 0; i < imageArray.length; i++) {
@@ -59,9 +55,10 @@ public class CassiniDustRingCalibrator extends AbstractBaseCalibrator {
 
 			imageArray[i] = (double) Math.round(modifiedVal);
 		}
+		return true;
 	}
 
-	private void processMottling(double[] imageArray, String nodeString, String sum) throws IOException {
+	private boolean processMottling(double[] imageArray, String nodeString, String sum) throws IOException {
 		// HANDLE IMAGE MOTTLING
 		Integer imageNumber = Integer.parseInt(extractValue("IMAGE_NUMBER", nodeString));
 		if (sum.equals("FULL") && (imageNumber > 1455892746)) {
@@ -73,19 +70,25 @@ public class CassiniDustRingCalibrator extends AbstractBaseCalibrator {
 				filters[0] = "CLR";
 			}
 
+			List<String> possibleFilters = Arrays.asList("UV1", "UV2", "UV3", "BL1", "BL2", "GRN", "RED", "IR1", "IR2",
+					"IR3", "IR4", "CB1", "CB2", "CB3", "MT1", "MT2", "MT3", "CLR");
+			double[] sfacts = new double[] { 1.199, 1.186, 1.069, 1.00, 0.833, 0.890, 0.843, 0.997, 0.897, 0.505,
+					0.780, 0.764, 0.781, 0.608, 0.789, 0.722, 0.546, 0.763 };
+
 			double sfact = 0.0;
-			if (!POSSIBLE_FILTERS.containsAll(Arrays.asList(filters[0], filters[1]))) {
-				if (POSSIBLE_FILTERS.contains(filters[0])) {
-					sfact = SFACTS[POSSIBLE_FILTERS.indexOf(filters[0])];
-				} else if (POSSIBLE_FILTERS.contains(filters[1])) {
-					sfact = SFACTS[POSSIBLE_FILTERS.indexOf(filters[1])];
+			if (!possibleFilters.containsAll(Arrays.asList(filters[0], filters[1]))) {
+				if (possibleFilters.contains(filters[0])) {
+					sfact = sfacts[possibleFilters.indexOf(filters[0])];
+				} else if (possibleFilters.contains(filters[1])) {
+					sfact = sfacts[possibleFilters.indexOf(filters[1])];
 				}
 
 			} else {
 				EffwlHolder effwl = null;
 				EffwlHolder effwlLookup = new EffwlHolder(filters[0], filters[1], 0.0, 0.0, 0.0, 0.0);
-				if (LOOKUP_TABLE.contains(effwlLookup)) {
-					effwl = LOOKUP_TABLE.get(LOOKUP_TABLE.indexOf(effwlLookup));
+				List<EffwlHolder> lookupTable = buildLookupTable();
+				if (lookupTable.contains(effwlLookup)) {
+					effwl = lookupTable.get(lookupTable.indexOf(effwlLookup));
 				}
 				if (effwl != null) {
 					sfact = 1.30280 - 0.000717552 * effwl.getEffectWavelength();
@@ -101,11 +104,12 @@ public class CassiniDustRingCalibrator extends AbstractBaseCalibrator {
 				imageArray[i] = (double) Math.round(val);
 			}
 		}
+		return true;
 	}
 
 	private static double[] mottleArray;
 
-	private synchronized double[] getMottleFileArray() throws IOException {
+	public synchronized double[] getMottleFileArray() throws IOException {
 		if (mottleArray == null) {
 			String mottlefile = calibrationDirectory + "/calib/dustring/nac_mottle_1444733393.tif";
 			mottleArray = readImageAsDoubleArray(new File(mottlefile));
@@ -113,8 +117,8 @@ public class CassiniDustRingCalibrator extends AbstractBaseCalibrator {
 		return mottleArray;
 	}
 
-	private static List<EffwlHolder> buildLookupTable() {
-		final List<EffwlHolder> effwlList = new ArrayList<>();
+	public static List<EffwlHolder> buildLookupTable() {
+		List<EffwlHolder> effwlList = new ArrayList<EffwlHolder>();
 
 		effwlList.add(new EffwlHolder("CL1", "CL2", 610.67491, 340.056, 651.05671, 305.975));
 		effwlList.add(new EffwlHolder("CL1", "GRN", 568.13358, 113.019, 569.23560, 109.947));
@@ -187,6 +191,7 @@ public class CassiniDustRingCalibrator extends AbstractBaseCalibrator {
 		effwlList.add(new EffwlHolder("IR2", "IR1", 827.43827, 28.0430, 827.33120, 28.0490));
 
 		return effwlList;
+
 	}
 
 	public static class EffwlHolder {

@@ -24,6 +24,7 @@ public class ConverterTest {
 	@BeforeClass
 	public static void setup() {
 		ApplicationProperties.setProperty(ApplicationProperties.MAX_NUM_PROCESSORS, Integer.toString(Runtime.getRuntime().availableProcessors()));
+		ApplicationProperties.setProperty(ApplicationProperties.CASSINI_CALIBRATION_DIR, "src/test/resources/calib");
 	}
 
 	//	@Test
@@ -94,6 +95,16 @@ public class ConverterTest {
 	public void conversionCassiniBatch() throws Exception {
 		String readDir = "/Users/kevinmcabee/sp/coiss_2098";
 		String writeDir = "/Users/kevinmcabee/sp/img_out";
+		FileSystemUtils.deleteRecursively(new File(writeDir));
+		converter.setReadDirectory(readDir);
+		converter.setWriteDirectory(writeDir);
+		converter.beginConversion();
+	}
+
+	@Test
+	public void conversionCassiniDifferencesFromOriginal() throws Exception {
+		String readDir = "./src/test/resources/test-dirs/read/data/cassini/differences";
+		String writeDir = "./src/test/resources/test-dirs/write/data/cassini/differences";
 		FileSystemUtils.deleteRecursively(new File(writeDir));
 		converter.setReadDirectory(readDir);
 		converter.setWriteDirectory(writeDir);
