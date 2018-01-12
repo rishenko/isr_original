@@ -164,24 +164,54 @@ public class VicarImageConverter {
 
         final double[] rasterArray = image.getRaster().getPixels(0, 0, width, height, new double[width * height]);
 
+        logMinMaxValue(rasterArray);
+
         boolean isCalibrated;
         logger.trace("lut 8to12 calibration");
         boolean isCalibratedLut = isCalibrated = new Lut8to12BitCalibrator().calibrate(rasterArray, iioMetadata);
+        logMinMaxValue(rasterArray);
 
         logger.trace("bitweight calibration");
-        isCalibrated = isCalibrated || new BitweightCalibrator(cassCalibDir).calibrate(rasterArray, iioMetadata);
+        isCalibrated = isCalibrated | new BitweightCalibrator(cassCalibDir).calibrate(rasterArray, iioMetadata);
+        logMinMaxValue(rasterArray);
 
         logger.trace("debias calibration");
-        isCalibrated = isCalibrated || new DebiasCalibrator().calibrate(rasterArray, iioMetadata);
+        isCalibrated = isCalibrated | new DebiasCalibrator().calibrate(rasterArray, iioMetadata);
+        logMinMaxValue(rasterArray);
 
         logger.trace("dust calibration");
-        isCalibrated = isCalibrated || new CassiniDustRingCalibrator(cassCalibDir).calibrate(rasterArray, iioMetadata);
+        isCalibrated = isCalibrated | new CassiniDustRingCalibrator(cassCalibDir).calibrate(rasterArray, iioMetadata);
+        logMinMaxValue(rasterArray);
 
         logger.trace("divide by flats calibration");
-        isCalibrated = isCalibrated || new DivideByFlatsCalibrator(cassCalibDir).calibrate(rasterArray, iioMetadata);
+        isCalibrated = isCalibrated | new DivideByFlatsCalibrator(cassCalibDir).calibrate(rasterArray, iioMetadata);
+        logMinMaxValue(rasterArray);
 
         return buildImagePostCalibration(width, height, rasterArray, isCalibrated, isCalibratedLut);
     }
+
+    private void logMinMaxValue(double[] rasterArray) {
+        double min = rasterArray[0];
+        int minPos = 0;
+        double max = rasterArray[0];
+        int maxPos = 0;
+
+        for (int i = 0; i < rasterArray.length; ++i) {
+            double d = rasterArray[i];
+            if (d < min) {
+                min = d;
+                minPos = i;
+            }
+            if (d > max) {
+                max = d;
+                maxPos = i;
+            }
+        }
+
+        logger.trace("min value: " + min + " found at " + minPos);
+        logger.trace("max value: " + max + " found at " + maxPos);
+    }
+
 
     private BufferedImage buildImagePostCalibration(int width, int height, double[] rasterArray, boolean isCalibrated, boolean isCalibratedLut) {
         BufferedImage imageNew;
@@ -190,6 +220,7 @@ public class VicarImageConverter {
 
             boolean needsNormalized = Arrays.stream(rasterArray).anyMatch((val) -> val > 1.0d);
             if (needsNormalized) {
+                logger.debug("needs normalized: " + needsNormalized);
                 double bitDivisor = isCalibratedLut ? 1 << 12 : 1 << 16;
                 for (int i = 0; i < rasterArray.length; i++) {
                     rasterArray[i] = rasterArray[i] / bitDivisor;
@@ -204,10 +235,12 @@ public class VicarImageConverter {
             final ColorModel colorModel = new ComponentColorModel(ColorSpace.getInstance(ColorSpace.CS_GRAY), false, false,
                     Transparency.OPAQUE, DataBuffer.TYPE_FLOAT);
             imageNew = new BufferedImage(colorModel, raster, false, null);
+
         } else {
             imageNew = new BufferedImage(width, height, BufferedImage.TYPE_USHORT_GRAY);
             imageNew.getRaster().setPixels(0, 0, width, height, rasterArray);
         }
+        logMinMaxValue(rasterArray);
         return imageNew;
     }
 

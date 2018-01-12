@@ -1,10 +1,9 @@
 package com.astrodoorways.converter.vicar.cassini;
 
-import java.io.IOException;
-
-import javax.imageio.metadata.IIOMetadata;
-
 import org.w3c.dom.Node;
+
+import java.io.IOException;
+import javax.imageio.metadata.IIOMetadata;
 
 public class DebiasCalibrator extends AbstractBaseCalibrator {
 
