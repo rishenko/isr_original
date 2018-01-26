@@ -190,7 +190,6 @@ public class VicarImageConverter {
 
             boolean needsNormalized = Arrays.stream(rasterArray).anyMatch((val) -> val > 1.0d);
             if (needsNormalized) {
-                logger.debug("needs normalized: " + needsNormalized);
                 double bitDivisor = isCalibratedLut ? 1 << 12 : 1 << 16;
                 for (int i = 0; i < rasterArray.length; i++) {
                     rasterArray[i] = rasterArray[i] / bitDivisor;
