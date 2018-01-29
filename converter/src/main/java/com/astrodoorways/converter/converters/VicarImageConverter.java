@@ -3,7 +3,11 @@ package com.astrodoorways.converter.converters;
 import com.astrodoorways.converter.ApplicationProperties;
 import com.astrodoorways.converter.db.imagery.Metadata;
 import com.astrodoorways.converter.metadata.processor.MetadataProcessor;
-import com.astrodoorways.converter.vicar.cassini.*;
+import com.astrodoorways.converter.vicar.cassini.BitweightCalibrator;
+import com.astrodoorways.converter.vicar.cassini.CassiniDustRingCalibrator;
+import com.astrodoorways.converter.vicar.cassini.DebiasCalibrator;
+import com.astrodoorways.converter.vicar.cassini.DivideByFlatsCalibrator;
+import com.astrodoorways.converter.vicar.cassini.Lut8to12BitCalibrator;
 import com.google.common.io.Files;
 import com.tomgibara.imageio.impl.tiff.TIFFLZWCompressor;
 import com.tomgibara.imageio.tiff.TIFFCompressor;
@@ -11,21 +15,33 @@ import com.tomgibara.imageio.tiff.TIFFImageWriteParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.awt.*;
+import java.awt.color.ColorSpace;
+import java.awt.image.BufferedImage;
+import java.awt.image.ColorModel;
+import java.awt.image.ComponentColorModel;
+import java.awt.image.DataBuffer;
+import java.awt.image.DataBufferDouble;
+import java.awt.image.PixelInterleavedSampleModel;
+import java.awt.image.Raster;
+import java.awt.image.RenderedImage;
+import java.awt.image.SampleModel;
+import java.awt.image.WritableRaster;
+import java.io.File;
+import java.io.IOException;
+import java.nio.ByteOrder;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.ImageWriter;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.stream.ImageOutputStream;
-import java.awt.*;
-import java.awt.color.ColorSpace;
-import java.awt.image.*;
-import java.io.File;
-import java.io.IOException;
-import java.nio.ByteOrder;
-import java.text.ParseException;
-import java.util.*;
-import java.util.List;
 
 /**
  * Convert a Vicar/PDS formatted image into another image format.
@@ -153,16 +169,16 @@ public class VicarImageConverter {
         boolean isCalibratedLut = isCalibrated = new Lut8to12BitCalibrator().calibrate(rasterArray, iioMetadata);
 
         logger.trace("bitweight calibration");
-        isCalibrated = isCalibrated || new BitweightCalibrator(cassCalibDir).calibrate(rasterArray, iioMetadata);
+        isCalibrated = isCalibrated | new BitweightCalibrator(cassCalibDir).calibrate(rasterArray, iioMetadata);
 
         logger.trace("debias calibration");
-        isCalibrated = isCalibrated || new DebiasCalibrator().calibrate(rasterArray, iioMetadata);
+        isCalibrated = isCalibrated | new DebiasCalibrator().calibrate(rasterArray, iioMetadata);
 
         logger.trace("dust calibration");
-        isCalibrated = isCalibrated || new CassiniDustRingCalibrator(cassCalibDir).calibrate(rasterArray, iioMetadata);
+        isCalibrated = isCalibrated | new CassiniDustRingCalibrator(cassCalibDir).calibrate(rasterArray, iioMetadata);
 
         logger.trace("divide by flats calibration");
-        isCalibrated = isCalibrated || new DivideByFlatsCalibrator(cassCalibDir).calibrate(rasterArray, iioMetadata);
+        isCalibrated = isCalibrated | new DivideByFlatsCalibrator(cassCalibDir).calibrate(rasterArray, iioMetadata);
 
         return buildImagePostCalibration(width, height, rasterArray, isCalibrated, isCalibratedLut);
     }
@@ -188,6 +204,7 @@ public class VicarImageConverter {
             final ColorModel colorModel = new ComponentColorModel(ColorSpace.getInstance(ColorSpace.CS_GRAY), false, false,
                     Transparency.OPAQUE, DataBuffer.TYPE_FLOAT);
             imageNew = new BufferedImage(colorModel, raster, false, null);
+
         } else {
             imageNew = new BufferedImage(width, height, BufferedImage.TYPE_USHORT_GRAY);
             imageNew.getRaster().setPixels(0, 0, width, height, rasterArray);

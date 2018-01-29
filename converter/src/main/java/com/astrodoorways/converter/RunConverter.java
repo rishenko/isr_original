@@ -28,7 +28,7 @@ public class RunConverter {
 	private static final Logger logger = LoggerFactory.getLogger(RunConverter.class);
 
 	public static void main(String... args) {
-		processProperties("RunConverter.properties");
+		processProperties(args.length > 0 ? args[0] : "RunConverter.properties");
 		SpringApplication.run(RunConverter.class, args);
 	}
 

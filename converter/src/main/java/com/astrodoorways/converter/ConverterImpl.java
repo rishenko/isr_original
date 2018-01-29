@@ -4,8 +4,6 @@ import com.astrodoorways.converter.db.filesystem.*;
 import com.astrodoorways.converter.db.imagery.Metadata;
 import com.astrodoorways.converter.db.imagery.MetadataDAO;
 import com.google.common.base.Strings;
-import com.thebuzzmedia.exiftool.ExifTool;
-import com.thebuzzmedia.exiftool.ExifToolBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -161,12 +159,7 @@ public class ConverterImpl implements Converter {
 	 */
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
 	private void convertFiles() throws Exception {
-		ExifTool exifTool = new ExifToolBuilder()
-				.withPoolSize(10)
-				.enableStayOpen()
-				.build();
-
-		// Convert all of the files according to the metadata in the database
+			// Convert all of the files according to the metadata in the database
 		AtomicInteger counter = new AtomicInteger();
 		int metadataCount = metadataDAO.countByFileInfoJob(job);
 		List<String> targets = ApplicationProperties.getPropertyAsStringList(ApplicationProperties.TARGET_LIST);
@@ -179,7 +172,7 @@ public class ConverterImpl implements Converter {
 			executorThrottleBasic(converterExecutor);
 			logger.trace("adding sequence convert task: {}", metadata);
 			ConvertRunnable runnable = context.getBean(ConvertRunnable.class);
-			prepConvertRunnable(exifTool, counter, metadataCount, metadata, runnable);
+			prepConvertRunnable(counter, metadataCount, metadata, runnable);
 			if (isSequence())
 				runnable.setSeqCount(count++);
 			converterExecutor.execute(runnable);
@@ -191,14 +184,11 @@ public class ConverterImpl implements Converter {
 		while (!converterExecutor.getThreadPoolExecutor().isTerminated()) {
 			sleep(1000);
 		}
-
-		exifTool.close();
 	}
 
-	private void prepConvertRunnable(ExifTool exifTool, AtomicInteger counter, int metadataCount, Metadata metadata, ConvertRunnable runnable) {
+	private void prepConvertRunnable(AtomicInteger counter, int metadataCount, Metadata metadata, ConvertRunnable runnable) {
 		runnable.setMetadata(metadata);
 		runnable.setWriteDirectory(writeDirectory);
-		runnable.setExifTool(exifTool);
 		runnable.setType("TIFF");
 		runnable.setCounter(counter);
 		runnable.setMaxValue(metadataCount);

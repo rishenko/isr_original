@@ -4,8 +4,7 @@ import com.astrodoorways.converter.converters.VicarImageConverter;
 import com.astrodoorways.converter.db.filesystem.FileInfo;
 import com.astrodoorways.converter.db.filesystem.FileInfoDAO;
 import com.astrodoorways.converter.db.imagery.Metadata;
-import com.astrodoorways.converter.vicar.exif.VicarThreadedJEXIFConverter;
-import com.thebuzzmedia.exiftool.ExifTool;
+import com.astrodoorways.converter.vicar.exif.VicarThreadedEXIFConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,12 +12,9 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
-import java.io.IOException;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.EmptyStackException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -35,7 +31,6 @@ public class ConvertRunnable implements Runnable {
 	private String filePath;
 	private Integer seqCount;
 	private String writeDirectory;
-	private ExifTool exifTool;
 	private AtomicInteger counter;
 	private int maxValue;
 	private String type;
@@ -47,11 +42,10 @@ public class ConvertRunnable implements Runnable {
 	public ConvertRunnable() {
 	}
 
-	public ConvertRunnable(Metadata metadata, String writeDirectory, ExifTool exifTool, String type,
+	public ConvertRunnable(Metadata metadata, String writeDirectory, String type,
 			AtomicInteger counter, int maxValue) {
 		this.metadata = metadata;
 		this.writeDirectory = writeDirectory;
-		this.exifTool = exifTool;
 		this.counter = counter;
 		this.maxValue = maxValue;
 		this.type = type;
@@ -59,10 +53,9 @@ public class ConvertRunnable implements Runnable {
 	}
 
 	public ConvertRunnable(Metadata metadata, Integer seqCount, String writeDirectory,
-						   ExifTool exifTool, String type, AtomicInteger counter, int maxValue) {
+						   String type, AtomicInteger counter, int maxValue) {
 		this.metadata = metadata;
 		this.writeDirectory = writeDirectory;
-		this.exifTool = exifTool;
 		this.counter = counter;
 		this.maxValue = maxValue;
 		this.type = type;
@@ -83,7 +76,7 @@ public class ConvertRunnable implements Runnable {
 			logger.trace("converted image {}", converter.getOutputtedFilePaths().toArray());
 			// exif is an expensive operation, only use on smaller files, add override somehow
 			if (new File(getOutputFilePath()).length() < maxFileSizeForExif) {
-				VicarThreadedJEXIFConverter exifConverter = new VicarThreadedJEXIFConverter(exifTool);
+				VicarThreadedEXIFConverter exifConverter = new VicarThreadedEXIFConverter();
 				for (String path : converter.getOutputtedFilePaths()) {
 					exifConverter.convert(path, converter.getIIOMetaData());
 				}
@@ -176,10 +169,6 @@ public class ConvertRunnable implements Runnable {
 		return writeDirectory;
 	}
 
-	public ExifTool getExifTool() {
-		return exifTool;
-	}
-
 	public AtomicInteger getCounter() {
 		return counter;
 	}
@@ -202,10 +191,6 @@ public class ConvertRunnable implements Runnable {
 
 	public void setWriteDirectory(String writeDirectory) {
 		this.writeDirectory = writeDirectory;
-	}
-
-	public void setExifTool(ExifTool exifTool) {
-		this.exifTool = exifTool;
 	}
 
 	public void setCounter(AtomicInteger counter) {
