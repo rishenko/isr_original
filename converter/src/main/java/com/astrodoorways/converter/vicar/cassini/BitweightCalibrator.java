@@ -57,48 +57,8 @@ public class BitweightCalibrator extends AbstractBaseCalibrator {
 		double useTemp = tempDiffs[0];
 
 		//selecting temp range
-
-		String fname = "wac";
-		if (instrument.equals("NA"))
-			fname = "nac";
-
-		String gainModeId = extractValue("GAIN_MODE_ID", nodeString);
-		int gainState;
-		switch (gainModeId) {
-		case "1400K":
-		case "215 e/DN":
-		case "215 ELECTRONS PER DN":
-			gainState = 0;
-			break;
-		case "400K":
-		case "95 e/DN":
-		case "95 ELECTRONS PER DN":
-			gainState = 1;
-			break;
-		case "100K":
-		case "29 e/DN":
-		case "29 ELECTRONS PER DN":
-			gainState = 2;
-			break;
-		case "40K":
-		case "12 e/DN":
-		case "12 ELECTRONS PER DN":
-			gainState = 3;
-			break;
-		default:
-			return false;
-		}
-
-		fname += "g" + gainState;
-		if (opticsTempDbl < -5.0) {
-			fname += "m10";
-		} else if (opticsTempDbl < 25.0) {
-			fname += "p5";
-		} else {
-			fname += "p25";
-		}
-
-		fname += "_bwt.tab";
+		String fname = buildBitweightFilename(nodeString, instrument, opticsTempDbl);
+		if (fname == null) return false;
 
 		try {
 			// build bitweight table;
@@ -137,5 +97,50 @@ public class BitweightCalibrator extends AbstractBaseCalibrator {
 		}
 
 		return true;
+	}
+
+	private String buildBitweightFilename(String nodeString, String instrument, Double opticsTempDbl) {
+		StringBuilder fname = new StringBuilder("wac");
+		if (instrument.equals("NA"))
+			fname = new StringBuilder("nac");
+
+		String gainModeId = extractValue("GAIN_MODE_ID", nodeString);
+		int gainState;
+		switch (gainModeId) {
+		case "1400K":
+		case "215 e/DN":
+		case "215 ELECTRONS PER DN":
+			gainState = 0;
+			break;
+		case "400K":
+		case "95 e/DN":
+		case "95 ELECTRONS PER DN":
+			gainState = 1;
+			break;
+		case "100K":
+		case "29 e/DN":
+		case "29 ELECTRONS PER DN":
+			gainState = 2;
+			break;
+		case "40K":
+		case "12 e/DN":
+		case "12 ELECTRONS PER DN":
+			gainState = 3;
+			break;
+		default:
+			return null;
+		}
+
+		fname.append("g").append(gainState);
+		if (opticsTempDbl < -5.0) {
+			fname.append("m10");
+		} else if (opticsTempDbl < 25.0) {
+			fname.append("p5");
+		} else {
+			fname.append("p25");
+		}
+
+		fname.append("_bwt.tab");
+		return fname.toString();
 	}
 }

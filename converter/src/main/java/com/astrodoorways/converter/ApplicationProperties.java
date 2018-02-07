@@ -17,11 +17,6 @@ public final class ApplicationProperties {
 	public static final String FUNPACK_PATH = "funpack.path";
 	public static final String FILTER_LIST = "filter.process.list";
 	public static final String TARGET_LIST = "target.process.list";
-	public static final String JOB_ID = "job.process";
-
-	public static final String PROCESS_JOB_ONLY = "job.only";
-	public static final String METADATA_ONLY = "process.metadata.only";
-	public static final String NORMALIZE = "normalize.imagery";
 
 	public static void setProperty(String property, String value) {
 		System.setProperty(property, value);

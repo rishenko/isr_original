@@ -23,8 +23,9 @@ public class ConverterTest {
 
 	@BeforeClass
 	public static void setup() {
-		ApplicationProperties.setProperty(ApplicationProperties.MAX_NUM_PROCESSORS, Integer.toString(Runtime.getRuntime().availableProcessors()));
+		ApplicationProperties.setProperty(ApplicationProperties.CASSINI_CALIBRATION_DIR, "calib");
 	}
+
 
 	//	@Test
 	public void conversionMercury() throws Exception {
@@ -92,8 +93,8 @@ public class ConverterTest {
 
 	@Test
 	public void conversionCassiniBatch() throws Exception {
-		String readDir = "/Users/kevinmcabee/sp/coiss_2098";
-		String writeDir = "/Users/kevinmcabee/sp/img_out";
+		String readDir = "/home/kmcabee/Projects/space_img/old_converter/coiss";
+		String writeDir = "/home/kmcabee/Projects/space_img/old_converter/coiss_output_new";
 		FileSystemUtils.deleteRecursively(new File(writeDir));
 		converter.setReadDirectory(readDir);
 		converter.setWriteDirectory(writeDir);

@@ -10,6 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
@@ -82,22 +84,17 @@ public class ConverterImpl implements Converter {
 
 		// Parse the file structure for applicable files
 		List<FileInfo> fileInfos;
-		Long jobId = ApplicationProperties.getPropertyAsLong(ApplicationProperties.JOB_ID);
 		logger.info("Begin building list of files to convert from read directory.");
-		if (jobId == null) {
-			job = buildAndPersistJob();
-			fileStructureWriter.setJob(job);
-			fileStructureWriter.writeFileStructure(new File(readDirectory));
-			fileInfos = fileStructureWriter.getFileInfos();
-		} else {
-			job = jobDAO.findById(jobId).get();
-			fileStructureWriter.setJob(job);
-			fileInfos = fileStructureWriter.getFileInfos();
-		}
+		job = buildAndPersistJob();
+		fileStructureWriter.setJob(job);
+		fileStructureWriter.writeFileStructure(new File(readDirectory));
+		fileInfos = fileStructureWriter.getFileInfos();
 		logger.info("Finished building list of files to convert from read directory.");
+
 		logger.info("Begin processing metadata.");
 		processMetadata(fileInfos);
 		logger.info("Finished processing metadata.");
+
 		logger.info("Begin converting data to images.");
 		convertFiles();
 		logger.info("Finished converting data to images.");
@@ -128,19 +125,23 @@ public class ConverterImpl implements Converter {
 			InterruptedException {
 		AtomicInteger counter = new AtomicInteger();
 		// Build the metadata for each of the files
+		int pageSize = 50;
 		int fileInfoCount = fileInfoDAO.countByJob(job);
-		for (FileInfo fileInfo: fileInfos) {
-			executorThrottleBasic(metadataExecutor);
-			preProcessImage(fileInfo);
-			// try to convert the image at least twice if there is a failure
-			logger.trace("adding a task to process metadata for: {}", fileInfo);
+		int maxPages = fileInfoCount / pageSize;
+		for (int page = 1; page <= maxPages; page++) {
+			PageRequest pageRequest = PageRequest.of(page, pageSize);
+			Page<FileInfo> dataPage = fileInfoDAO.findByJob(job, pageRequest);
+			for (FileInfo fileInfo: dataPage) {
+				preProcessImage(fileInfo);
+				logger.trace("adding a task to process metadata for: {}", fileInfo);
 
-			MetadataProcessRunnable runnable = context.getBean(MetadataProcessRunnable.class);
-			runnable.setJob(fileInfo.getJob());
-			runnable.setFileInfo(fileInfo);
-			runnable.setCounter(counter);
-			runnable.setMaxValue(fileInfoCount);
-			metadataExecutor.execute(runnable);
+				MetadataProcessRunnable runnable = context.getBean(MetadataProcessRunnable.class);
+				runnable.setJob(fileInfo.getJob());
+				runnable.setFileInfo(fileInfo);
+				runnable.setCounter(counter);
+				runnable.setMaxValue(fileInfoCount);
+				metadataExecutor.execute(runnable);
+			}
 		}
 
 		// let the metadata processing tasks live while the converter processes
@@ -149,7 +150,6 @@ public class ConverterImpl implements Converter {
 		while (!metadataExecutor.getThreadPoolExecutor().isTerminated()) {
 			sleep(1000);
 		}
-
 	}
 
 	/**
@@ -167,15 +167,18 @@ public class ConverterImpl implements Converter {
 
 		logger.debug("targets: {} filters: {} metadataCount: {}", targets, filters, metadataCount);
 
-		int count = 0;
-		for (Metadata metadata : metadataDAO.findByFileInfoJob(job)) {
-			executorThrottleBasic(converterExecutor);
-			logger.trace("adding sequence convert task: {}", metadata);
-			ConvertRunnable runnable = context.getBean(ConvertRunnable.class);
-			prepConvertRunnable(counter, metadataCount, metadata, runnable);
-			if (isSequence())
-				runnable.setSeqCount(count++);
-			converterExecutor.execute(runnable);
+		int totalFiles = metadataDAO.countByFileInfoJob(job);
+		int pageSize = 50;
+		int maxPages = (totalFiles / pageSize) + 1;
+		for (int page = 1; page <= maxPages; page++) {
+			PageRequest pageRequest = PageRequest.of(page, pageSize);
+			Page<Metadata> dataPage = metadataDAO.findByFileInfoJob(job, pageRequest);
+			dataPage.forEach(metadata -> {
+				logger.trace("adding sequence convert task: {}", metadata);
+				ConvertRunnable runnable = context.getBean(ConvertRunnable.class);
+				prepConvertRunnable(counter, metadataCount, metadata, runnable);
+				converterExecutor.execute(runnable);
+			});
 		}
 
 		// let the thread live while the converter processes

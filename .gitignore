@@ -1,6 +1,7 @@
 ### Converter
-converter/src/test/resources/calib
+converter/calib
 converter/*.log
+*.db
 
 ### Mac
 .DS_Store

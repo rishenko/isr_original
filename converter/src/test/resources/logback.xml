@@ -23,6 +23,7 @@
     </appender>
 
     <logger name="com.astrodoorways.converter" level="debug"/>
+    <!--logger name="org.hibernate.SQL" level="debug"/-->
 
     <root level="warn">
         <appender-ref ref="STDOUT" />
