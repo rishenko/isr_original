@@ -1,0 +1,34 @@
+pipeline:
+  name: isr-test
+  identifier: isrtest
+  projectIdentifier: default_project
+  orgIdentifier: default
+  tags: {}
+  properties:
+    ci:
+      codebase:
+        connectorRef: harnessv2
+        build: <+input>
+  stages:
+    - stage:
+        name: isr-build-1
+        identifier: isrbuild1
+        description: ""
+        type: CI
+        spec:
+          cloneCodebase: true
+          platform:
+            os: MacOS
+            arch: Arm64
+          runtime:
+            type: Docker
+            spec: {}
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  name: Run_1
+                  identifier: Run_1
+                  spec:
+                    shell: Bash
+                  description: mvn clean package
