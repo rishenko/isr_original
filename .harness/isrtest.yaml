@@ -32,5 +32,7 @@ pipeline:
                   spec:
                     shell: Bash
                   description: mvn clean package
+        delegateSelectors:
+          - docker-delegate-mac-two
   delegateSelectors:
     - docker-delegate-mac-two
