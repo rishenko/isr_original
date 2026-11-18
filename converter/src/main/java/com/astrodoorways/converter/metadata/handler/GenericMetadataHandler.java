@@ -9,7 +9,8 @@ import org.w3c.dom.Node;
 
 public class GenericMetadataHandler implements MetadataHandler {
 
-	public static final SimpleDateFormat VICAR_FORMATTER = TimeFormats.utc("yyyy-DDD'T'HH:mm:ss.SSS'Z'");
+	// per instance: SimpleDateFormat is not thread-safe, and metadata is read on several threads
+	public final SimpleDateFormat VICAR_FORMATTER = TimeFormats.utc("yyyy-DDD'T'HH:mm:ss.SSS'Z'");
 
 	private Map<String, String> valueMap = new HashMap<>();
 

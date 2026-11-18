@@ -91,7 +91,7 @@ public class MetadataProcessor {
 			return null;
 		List<SimpleDateFormat> formats = new ArrayList<>();
 		if (handler != null)
-			formats.add(handler.getFormatter());
+			formats.add((SimpleDateFormat) handler.getFormatter().clone()); // never share a formatter across threads
 		formats.add(TimeFormats.utc("yyyy-DDD'T'HH:mm:ss.SSS'Z'"));
 		formats.add(TimeFormats.utc("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"));
 		for (SimpleDateFormat format : formats) {
