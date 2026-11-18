@@ -58,16 +58,24 @@ public class VicarImageConverter {
     private final List<String> outputtedFilePaths = new ArrayList<>();
     private final Logger logger = LoggerFactory.getLogger(VicarImageConverter.class);
     private IIOMetadata iioMetadata;
+    private boolean replaceExisting;
+
+    /** Overwrite an existing output file instead of throwing (used when resuming a job). */
+    public void setReplaceExisting(boolean replaceExisting) {
+        this.replaceExisting = replaceExisting;
+    }
 
     /**
      * @param metadata       the metadata describing the conversion info for this image
-     * @param seqCount       the sequence number of this image in the conversion pipeline
+     * @param seqCount       the image's sequence number within its target and filter (sequence runs only), or null
      * @param writeDirectory the directory to write the outgoing image to
      * @param format         the format of the output image
      */
     public VicarImageConverter(Metadata metadata, Integer seqCount, String writeDirectory, String format) {
         this.metadata = metadata;
-        this.inputFilePath = metadata.getFileInfo().getFilePath();
+        // read the funpack intermediary when there is one (see ConverterImpl.preProcessImage)
+        String preprocessed = metadata.getFileInfo().getPreprocessedFileName();
+        this.inputFilePath = preprocessed != null ? preprocessed : metadata.getFileInfo().getFilePath();
         if (!writeDirectory.endsWith("/")) {
             writeDirectory += "/";
         }
@@ -217,14 +225,20 @@ public class VicarImageConverter {
      */
     public String generateOutputFilePath(int w, int h) throws ParseException {
         final String sep = "/";
+        String fileStructure = metadataProcessor.getFileStructure();
+        String fileName = seqCount == null ? metadataProcessor.getFileName() : metadataProcessor.getFileName(seqCount);
+        // images from an unrecognised mission have no structure or name (they were written as
+        // "null/null...", so a second one failed with "image already exists"); fall back to the
+        // input file's own name in an "unknown" folder
+        if (fileStructure == null)
+            fileStructure = UNKNOWN_FOLDER;
+        if (fileName == null)
+            fileName = inputBaseName();
+
         StringBuilder outputtedFilePath = new StringBuilder(writeDirectory);
-        if (seqCount == null) {
-            outputtedFilePath.append(metadataProcessor.getFileStructure())
-                    .append(sep)
-                    .append(metadataProcessor.getFileName());
-        } else {
-            buildSequenceOutputFilePath(sep, outputtedFilePath);
-        }
+        outputtedFilePath.append(fileStructure)
+                .append(sep)
+                .append(fileName);
 
         outputtedFilePath.append("w").append(w)
                 .append("-h").append(h)
@@ -240,37 +254,13 @@ public class VicarImageConverter {
         return outputtedFilePath.toString();
     }
 
-    /**
-     * Build output file path for an image being converted in a sequence of images.
-     * @param sep               the separator for the system's file structure
-     * @param outputtedFilePath the output file path for the image
-     */
-    private void buildSequenceOutputFilePath(String sep, StringBuilder outputtedFilePath) {
-        // BUILD DIRECTORY
-        outputtedFilePath.append(metadata.getMission().replace("/", "-"))
-            .append("_")
-            .append(metadata.getTarget())
-            .append("_")
-            .append(metadata.getFilterOne());
+    /** Output folder for images whose mission isn't recognised. */
+    public static final String UNKNOWN_FOLDER = "unknown";
 
-        // not all missions have a secondary filter for the cameras
-        if (metadata.getFilterTwo() != null)
-            outputtedFilePath.append("-").append(metadata.getFilterTwo());
-
-        // BUILD FILENAME
-        outputtedFilePath.append(sep);
-        outputtedFilePath.append(metadata.getMission().replace("/", "-")).append("_")
-                .append(metadata.getTarget())
-                .append("_")
-                .append(metadata.getFilterOne());
-
-        // not all missions have a seondary filter for the cameras
-        if (metadata.getFilterTwo() != null)
-            outputtedFilePath.append(metadata.getFilterTwo());
-
-        String sequence = seqCount.toString();
-        sequence = "0000000000".substring(sequence.length()) + sequence;
-        outputtedFilePath.append("_").append(sequence);
+    private String inputBaseName() {
+        String name = metadata.getFileInfo().getFileName();
+        int dot = name.lastIndexOf('.');
+        return dot > 0 ? name.substring(0, dot) : name;
     }
 
     /**
@@ -287,7 +277,7 @@ public class VicarImageConverter {
         logger.trace("generating output path");
 
         // the image has already been created
-        if (new File(outputtedFilePath).exists()) {
+        if (new File(outputtedFilePath).exists() && !replaceExisting) {
             throw new IllegalStateException("image already exists: " + outputtedFilePath);
         }
         final File output = new File(outputtedFilePath);

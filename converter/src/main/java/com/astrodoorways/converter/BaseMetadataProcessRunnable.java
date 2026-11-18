@@ -2,8 +2,6 @@ package com.astrodoorways.converter;
 
 import java.io.File;
 import java.io.IOException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -113,17 +111,10 @@ public class BaseMetadataProcessRunnable implements Runnable, MetadataProcessRun
 		metadata.setMission(valueMap.get(MetadataHandler.MISSION));
 		metadata.setTarget(valueMap.get(MetadataHandler.TARGET));
 
-		SimpleDateFormat formatter = new SimpleDateFormat("yyyy-DDD'T'HH:mm:ss.SSS'Z'");
-		try {
-			metadata.setTime(formatter.parse(valueMap.get(MetadataHandler.TIME)));
-		} catch (ParseException e) {
-			formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SS'Z'");
-			try {
-				metadata.setTime(formatter.parse(valueMap.get(MetadataHandler.TIME)));
-			} catch (ParseException e1) {
-				logger.error("Couldn't parse the date", e1);
-			}
-		}
+		// parsed with the label's own format first (Rosetta times have no "Z", so they used to be lost)
+		metadata.setTime(metadataProcessor.parseTime(valueMap.get(MetadataHandler.TIME)));
+		if (metadata.getTime() == null)
+			logger.error("Couldn't parse the date {}", valueMap.get(MetadataHandler.TIME));
 
 		metadataDAO.save(metadata);
 		metadata.setFileInfo(fileInfo);

@@ -1,11 +1,11 @@
-convert.files=[null/nullw512-h512.TIFF]
+convert.files=[unknown/rosat_pspc_rdf2_3_mexw512-h512.TIFF]
 convert.output.0.bands=1
 convert.output.0.count=262144
 convert.output.0.dataType=4
 convert.output.0.height=512
 convert.output.0.max=32767.0
 convert.output.0.min=0.0
-convert.output.0.path=<WRITE>/null/nullw512-h512.TIFF
+convert.output.0.path=<WRITE>/unknown/rosat_pspc_rdf2_3_mexw512-h512.TIFF
 convert.output.0.sha256=848ba36a654b4ff59aec799b1ea83fb3318765c903c89c5ff5f47b2092c46636
 convert.output.0.sum=3.27372904E9
 convert.output.0.width=512

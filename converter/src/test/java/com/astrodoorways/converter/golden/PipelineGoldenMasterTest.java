@@ -94,6 +94,13 @@ public class PipelineGoldenMasterTest {
 		run("cassini-calibrated-sequence", "read/data/cassini/calibrated");
 	}
 
+	/** Three OPEN CL1-CL2 images and one SATURN image: numbers follow image time within each group. */
+	@Test
+	public void cassiniSequenceIsChronological() throws Exception {
+		ApplicationProperties.setProperty(ApplicationProperties.SEQUENCE, "SEQ_TEST");
+		run("cassini-1526038904-sequence", "read/data/1526038904_1526111192");
+	}
+
 	@Test
 	public void huygens() throws Exception {
 		run("huygens", "read/huygens");

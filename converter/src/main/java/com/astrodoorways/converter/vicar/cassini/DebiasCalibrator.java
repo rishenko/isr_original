@@ -18,7 +18,12 @@ public class DebiasCalibrator extends AbstractBaseCalibrator {
 		//		if (convType.equals("TABLE") || convType.equals("LOSSY"))
 		//			return false;
 
-		Double offset = Double.parseDouble(extractValue("BIAS_STRIP_MEAN", nodeString));
+		// some labels (e.g. 1996 ground-test images) have no BIAS_STRIP_MEAN; skip instead of
+		// failing the whole image with a NumberFormatException
+		String biasStripMean = extractValue("BIAS_STRIP_MEAN", nodeString);
+		if (biasStripMean.isEmpty())
+			return false;
+		Double offset = Double.parseDouble(biasStripMean);
 
 		for (int i = 0; i < imageArray.length; i++) {
 			imageArray[i] = imageArray[i] - offset;

@@ -4,6 +4,9 @@ import com.astrodoorways.converter.ApplicationProperties;
 import com.astrodoorways.converter.ConvertRunnable;
 import com.astrodoorways.converter.metadata.handler.CassiniHandler;
 import com.astrodoorways.converter.metadata.handler.MetadataHandler;
+import com.astrodoorways.converter.metadata.handler.RosettaHandler;
+import com.astrodoorways.converter.metadata.handler.SDOHandler;
+import com.astrodoorways.converter.metadata.handler.TimeFormats;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -19,9 +22,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Output naming and date handling. Several tests pin known bugs on purpose (12-hour clock,
- * zero-based month folders); when those bugs are fixed, update the expectations in the same change.
- * Runs in UTC (set in the surefire configuration).
+ * Output naming and date handling. Runs in UTC (set in the surefire configuration); the
+ * formats are pinned to UTC, which {@link #timesDoNotDependOnTheDefaultTimeZone()} checks.
  */
 public class NamingAndDatesTest {
 
@@ -52,27 +54,78 @@ public class NamingAndDatesTest {
 		assertEquals("20120327084559975", handlerWith(null, null).convertVicarDateToTimestamp("2012-087T08:45:59.975Z"));
 	}
 
-	/** Current behaviour (bug): 'hh' is a 12-hour clock, so 13:45 is written as 01. */
+	/** Was a 12-hour clock ('hh'), which wrote 13:45 as 01. */
 	@Test
-	public void afternoonTimestampUsesTwelveHourClock() throws ParseException {
-		assertEquals("20120327014559975", handlerWith(null, null).convertVicarDateToTimestamp("2012-087T13:45:59.975Z"));
+	public void afternoonTimestampUsesTwentyFourHourClock() throws ParseException {
+		assertEquals("20120327134559975", handlerWith(null, null).convertVicarDateToTimestamp("2012-087T13:45:59.975Z"));
 	}
 
-	/**
-	 * Current behaviour (bug): a six-digit fraction is not truncated. The lenient parser reads
-	 * 975123 as milliseconds (16 min 15.123 s), so 08:45:59.975123 becomes 09:02:14.123. The
-	 * truncation fallback only runs on a ParseException, which never happens here.
-	 */
+	/** Was read as 975,123 ms, which turned 08:45:59.975123 into 09:02:14.123. */
 	@Test
-	public void microsecondTimesAreMisreadAsMilliseconds() throws ParseException {
-		assertEquals("20120327090214123",
+	public void microsecondTimesAreTruncatedToMilliseconds() throws ParseException {
+		assertEquals("20120327084559975",
 				handlerWith(null, null).convertVicarDateToTimestamp("2012-087T08:45:59.975123Z"));
+		assertEquals("2012/03/27", handlerWith("2012-087T23:59:59.999999Z", "CL1").getFileStructure());
 	}
 
-	/** Current behaviour (bug): Calendar.MONTH is zero-based, so March is folder 2. */
+	/** Was zero-based and unpadded: March 27 went to folder "2012/2/27". */
 	@Test
-	public void folderStructureUsesZeroBasedMonth() {
-		assertEquals("2012/2/27", handlerWith("2012-087T08:45:59.975Z", "CL1-CL2").getFileStructure());
+	public void folderStructureUsesPaddedCalendarMonth() {
+		assertEquals("2012/03/27", handlerWith("2012-087T08:45:59.975Z", "CL1-CL2").getFileStructure());
+		assertEquals("2012/12/31", handlerWith("2012-366T08:45:59.975Z", "CL1-CL2").getFileStructure());
+		assertEquals("2013/01/01", handlerWith("2013-001T00:00:00.000Z", "CL1-CL2").getFileStructure());
+	}
+
+	@Test
+	public void timesDoNotDependOnTheDefaultTimeZone() throws ParseException {
+		TimeZone original = TimeZone.getDefault();
+		try {
+			TimeZone.setDefault(TimeZone.getTimeZone("Pacific/Auckland"));
+			CassiniHandler handler = handlerWith("2012-087T23:45:59.975Z", "CL1-CL2");
+			assertEquals("2012/03/27", handler.getFileStructure());
+			assertEquals("CASSINI-HUYGENS_TITAN_CL1-CL2_20120327234559975", handler.getFileName());
+		} finally {
+			TimeZone.setDefault(original);
+		}
+	}
+
+	@Test
+	public void normalizeFraction() {
+		assertEquals("2012-087T08:45:59.975Z", TimeFormats.normalizeFraction("2012-087T08:45:59.975123Z"));
+		assertEquals("2010-05-01T12:00:01.340Z", TimeFormats.normalizeFraction("2010-05-01T12:00:01.34Z"));
+		assertEquals("2010-05-01T12:00:01.500", TimeFormats.normalizeFraction("2010-05-01T12:00:01.5"));
+		assertEquals("2010-05-01T12:00:01Z", TimeFormats.normalizeFraction("2010-05-01T12:00:01Z"));
+		assertEquals(null, TimeFormats.normalizeFraction(null));
+	}
+
+	/** SDO times have two fraction digits; ".34" was read as 34 ms instead of 340. */
+	@Test
+	public void sdoTwoDigitFraction() throws ParseException {
+		SDOHandler handler = new SDOHandler();
+		Map<String, String> values = new HashMap<>();
+		values.put(MetadataHandler.TIME, "2010-05-01T12:00:01.34Z");
+		values.put(MetadataHandler.MISSION, "SDO");
+		values.put(MetadataHandler.TARGET, "SUN");
+		values.put(MetadataHandler.FILTER, "171");
+		handler.setValueMap(values);
+		assertEquals("SDO_SUN_171_20100501120001340", handler.getFileName());
+		values.put(MetadataHandler.MISSION, "SDO/JSOC-SDP");
+		assertEquals("SDO-JSOC-SDP_SUN_171_20100501120001340", handler.getFileName());
+		assertEquals("2010/05/01", handler.getFileStructure());
+	}
+
+	/** The pattern used "DD" (day of year) for the day of month, so every date landed in January. */
+	@Test
+	public void rosettaDate() throws ParseException {
+		RosettaHandler handler = new RosettaHandler();
+		Map<String, String> values = new HashMap<>();
+		values.put(MetadataHandler.TIME, "2014-10-24T11:34:35.924");
+		values.put(MetadataHandler.MISSION, "INTERNATIONAL-ROSETTA-MISSION");
+		values.put(MetadataHandler.TARGET, "67P");
+		values.put(MetadataHandler.FILTER, "F22");
+		handler.setValueMap(values);
+		assertEquals("2014/10/24", handler.getFileStructure());
+		assertEquals("INTERNATIONAL-ROSETTA-MISSION_67P_F22_20141024113435924", handler.getFileName());
 	}
 
 	@Test
@@ -101,12 +154,12 @@ public class NamingAndDatesTest {
 		assertFalse(new CassiniHandler().isSequencedFile());
 	}
 
-	/** ConvertRunnable has its own copy of the timestamp format, with the same 12-hour bug. */
+	/** ConvertRunnable has its own copy of the timestamp format, which also used a 12-hour clock. */
 	@Test
 	public void convertRunnableTimestamp() throws ParseException {
 		SimpleDateFormat utc = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
 		utc.setTimeZone(TimeZone.getTimeZone("UTC"));
 		ConvertRunnable runnable = new ConvertRunnable();
-		assertEquals("20120327014559975", runnable.convertVicarDateToTimestamp(utc.parse("2012-03-27 13:45:59.975")));
+		assertEquals("20120327134559975", runnable.convertVicarDateToTimestamp(utc.parse("2012-03-27 13:45:59.975")));
 	}
 }

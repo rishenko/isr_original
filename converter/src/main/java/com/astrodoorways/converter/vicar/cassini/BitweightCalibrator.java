@@ -100,9 +100,16 @@ public class BitweightCalibrator extends AbstractBaseCalibrator {
 
 		fname += "_bwt.tab";
 
+		// The calibration volume has bitweight tables for gain states 1-3 only. Without a table there is
+		// nothing to correct; this used to throw FileNotFoundException and fail the whole image.
+		File btwFile = new File(calibrationDirectory + "/calib/bitweight/" + fname);
+		if (!btwFile.isFile()) {
+			logger.debug("no bitweight table {}; skipping bitweight correction", btwFile);
+			return false;
+		}
+
 		try {
 			// build bitweight table;
-			File btwFile = new File(calibrationDirectory + "/calib/bitweight/" + fname);
 			BufferedReader reader = new BufferedReader(new FileReader(btwFile));
 			String line;
 			boolean markFound = false;

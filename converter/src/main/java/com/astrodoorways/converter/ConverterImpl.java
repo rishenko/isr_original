@@ -16,8 +16,17 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -53,6 +62,8 @@ public class ConverterImpl implements Converter {
 	private String readDirectory;
 	private String writeDirectory;
 	private Job job;
+	private File temporaryDirectory;
+	private boolean resuming;
 
 	/**
 	 * Default no-arg constructor to allow for bean usage.
@@ -86,13 +97,20 @@ public class ConverterImpl implements Converter {
 		logger.info("Begin building list of files to convert from read directory.");
 		if (jobId == null) {
 			job = buildAndPersistJob();
+			resuming = false;
+			logger.info("Started job {}. To resume it after an interruption, run again with {}={}.", job.getId(),
+					ApplicationProperties.JOB_ID, job.getId());
 			fileStructureWriter.setJob(job);
 			fileStructureWriter.writeFileStructure(new File(readDirectory));
 			fileInfos = fileStructureWriter.getFileInfos();
 		} else {
-			job = jobDAO.findById(jobId).get();
+			job = jobDAO.findById(jobId)
+					.orElseThrow(() -> new IllegalArgumentException("no job with id " + jobId + " in the database"));
+			resuming = true;
 			fileStructureWriter.setJob(job);
 			fileInfos = fileStructureWriter.getFileInfos();
+			logger.info("Resuming job {}: {} files, {} already converted.", jobId, fileInfos.size(),
+					fileInfos.stream().filter(fileInfo -> fileInfo.getOutputFileName() != null).count());
 		}
 		logger.info("Finished building list of files to convert from read directory.");
 		logger.info("Begin processing metadata.");
@@ -127,11 +145,25 @@ public class ConverterImpl implements Converter {
 	private void processMetadata(List<FileInfo> fileInfos) throws IOException,
 			InterruptedException {
 		AtomicInteger counter = new AtomicInteger();
-		// Build the metadata for each of the files
-		int fileInfoCount = fileInfoDAO.countByJob(job);
-		for (FileInfo fileInfo: fileInfos) {
+		// when resuming, skip files that are already converted or already have metadata
+		Set<Long> withMetadata = new HashSet<>();
+		for (Metadata metadata : metadataDAO.findByFileInfoJob(job)) {
+			withMetadata.add(metadata.getFileInfo().getId());
+		}
+		List<FileInfo> todo = new ArrayList<>();
+		for (FileInfo fileInfo : fileInfos) {
+			if (fileInfo.getOutputFileName() == null) {
+				todo.add(fileInfo);
+			}
+		}
+		int fileInfoCount = (int) todo.stream().filter(fileInfo -> !withMetadata.contains(fileInfo.getId())).count();
+		for (FileInfo fileInfo: todo) {
 			executorThrottleBasic(metadataExecutor);
+			// files still to convert need their funpack intermediary even if their metadata exists
 			preProcessImage(fileInfo);
+			if (withMetadata.contains(fileInfo.getId())) {
+				continue;
+			}
 			// try to convert the image at least twice if there is a failure
 			logger.trace("adding a task to process metadata for: {}", fileInfo);
 
@@ -161,20 +193,28 @@ public class ConverterImpl implements Converter {
 	private void convertFiles() throws Exception {
 			// Convert all of the files according to the metadata in the database
 		AtomicInteger counter = new AtomicInteger();
-		int metadataCount = metadataDAO.countByFileInfoJob(job);
+		int metadataCount = (int) metadataDAO.findByFileInfoJob(job).stream()
+				.filter(metadata -> metadata.getFileInfo().getOutputFileName() == null).count();
 		List<String> targets = ApplicationProperties.getPropertyAsStringList(ApplicationProperties.TARGET_LIST);
 		List<String> filters = ApplicationProperties.getPropertyAsStringList(ApplicationProperties.FILTER_LIST);
 
 		logger.debug("targets: {} filters: {} metadataCount: {}", targets, filters, metadataCount);
 
-		int count = 0;
-		for (Metadata metadata : metadataDAO.findByFileInfoJob(job)) {
+		List<Metadata> metadataList = metadataDAO.findByFileInfoJob(job);
+		// numbered over the whole job, so a resumed job gives every image the same number as before
+		Map<Metadata, Integer> sequenceNumbers = isSequence() ? assignSequenceNumbers(metadataList)
+				: Collections.emptyMap();
+		for (Metadata metadata : metadataList) {
+			if (metadata.getFileInfo().getOutputFileName() != null) {
+				continue; // converted before the job was interrupted
+			}
 			executorThrottleBasic(converterExecutor);
-			logger.trace("adding sequence convert task: {}", metadata);
+			logger.trace("adding convert task: {}", metadata);
 			ConvertRunnable runnable = context.getBean(ConvertRunnable.class);
 			prepConvertRunnable(counter, metadataCount, metadata, runnable);
-			if (isSequence())
-				runnable.setSeqCount(count++);
+			runnable.setSeqCount(sequenceNumbers.get(metadata));
+			// an output left half-written by the interrupted run is replaced
+			runnable.setReplaceExisting(resuming);
 			converterExecutor.execute(runnable);
 		}
 
@@ -218,36 +258,29 @@ public class ConverterImpl implements Converter {
 	}
 
 	/**
-	 * @return if the job should build a sequence of files or not
+	 * @return if the job should build a sequence of files or not (a non-blank sequence name is set)
 	 */
 	private boolean isSequence() {
 		String seqStr = ApplicationProperties.getPropertyAsString(ApplicationProperties.SEQUENCE);
-		return seqStr != null && seqStr.trim().equals("");
+		return seqStr != null && !seqStr.trim().isEmpty();
 	}
 
 	/**
-	 * build a local directory structure
-	 * 
-	 * @param link
+	 * Number the images 1, 2, 3... within each target and filter combination, in order of image
+	 * time, so a sequence plays back chronologically no matter which thread finishes first.
+	 * Images without a time go last; ties are broken by file path so numbering is repeatable.
 	 */
-	private void buildLocalDirectoryStructure(String link) {
-		String dir = "";
-		for (String nextDir : link.split("/")) {
-			if (nextDir == null || nextDir.equals("")) {
-				dir += "/";
-				continue;
-			}
-
-			if (link.endsWith(nextDir)) {
-				break;
-			}
-
-			dir += nextDir + "/";
-			File tempFile = new File(dir);
-			if (!tempFile.canRead()) {
-				tempFile.mkdir();
-			}
+	static Map<Metadata, Integer> assignSequenceNumbers(List<Metadata> metadataList) {
+		List<Metadata> sorted = new ArrayList<>(metadataList);
+		sorted.sort(Comparator.comparing(Metadata::getTime, Comparator.nullsLast(Comparator.<Date>naturalOrder()))
+				.thenComparing(metadata -> metadata.getFileInfo().getFilePath()));
+		Map<String, Integer> counters = new HashMap<>();
+		Map<Metadata, Integer> numbers = new IdentityHashMap<>();
+		for (Metadata metadata : sorted) {
+			String key = metadata.getTarget() + "|" + metadata.getFilterOne() + "|" + metadata.getFilterTwo();
+			numbers.put(metadata, counters.merge(key, 1, Integer::sum));
 		}
+		return numbers;
 	}
 
 	@Override
@@ -260,54 +293,100 @@ public class ConverterImpl implements Converter {
 		this.writeDirectory = writeDirectory;
 	}
 
-	@Transactional(propagation = Propagation.REQUIRES_NEW)
-	private void preProcessImage(FileInfo fileInfo) throws IOException, InterruptedException {
-		String filePath = fileInfo.getDirectory() + "/" + fileInfo.getFileName();
-
-		if (filePath.endsWith(".fits")) {
-			// rename fits file to fz to try and unpack, just in case
-			String newFilePath = filePath.substring(0, filePath.length() - 4) + "fz";
-			if (!new File(filePath).renameTo(new File(newFilePath))) {
-				new File(filePath).delete();
-			}
-			filePath = newFilePath;
+	/**
+	 * Unpack fpack-compressed FITS files (.fz, and .fits files that may be tile-compressed) with
+	 * funpack into an intermediary .fits file, and record its path on the FileInfo so both the
+	 * metadata and conversion stages read it.
+	 *
+	 * The source file is never renamed or deleted. If funpack is missing or fails, the original
+	 * file is used as is (for .fits inputs this is the same data, uncompressed).
+	 *
+	 * The intermediary goes to {@code preprocessed.file.dir} (mirroring the read directory's
+	 * layout) when that is set, and otherwise to a temporary folder that the converter cleans up.
+	 */
+	void preProcessImage(FileInfo fileInfo) throws IOException, InterruptedException {
+		String fileName = fileInfo.getFileName();
+		String lowerName = fileName.toLowerCase();
+		if (!lowerName.endsWith(".fits") && !lowerName.endsWith(".fz")) {
+			return;
+		}
+		// already unpacked (e.g. a resumed job using preprocessed.file.dir)
+		if (fileInfo.getPreprocessedFileName() != null && new File(fileInfo.getPreprocessedFileName()).canRead()) {
+			return;
 		}
 
-		if (filePath.endsWith(".fz")) {
-			// handle the location of the intermediary, preprocessed file
-			String newFilePath = ApplicationProperties.getPropertyAsString(ApplicationProperties.PREPROCESSED_PATH);
-			String fileName = fileInfo.getFileName();
-			if (newFilePath != null) {
-				logger.trace("using intermediary structure");
-				newFilePath += "/" + fileInfo.getDirectory().replace(this.readDirectory, "") + "/";
-				buildLocalDirectoryStructure(newFilePath);
-				newFilePath += fileName.substring(0, fileName.length() - 2) + "fits";
-			} else {
-				newFilePath = fileInfo.getDirectory() + "/" + fileName.substring(0, fileName.length() - 2) + "fits";
-			}
-			logger.trace("intermediary file path: {}", newFilePath);
+		String baseName = fileName.substring(0, fileName.lastIndexOf('.'));
+		File intermediary;
+		String preprocessedDir = ApplicationProperties.getPropertyAsString(ApplicationProperties.PREPROCESSED_PATH);
+		if (preprocessedDir != null) {
+			intermediary = new File(new File(preprocessedDir, relativeToReadDirectory(fileInfo.getDirectory())),
+					baseName + ".fits");
+		} else {
+			intermediary = new File(temporaryDirectory(), fileInfo.getId() + "_" + baseName + ".fits");
+		}
+		if (intermediary.getCanonicalFile().equals(new File(fileInfo.getFilePath()).getCanonicalFile())) {
+			logger.warn("not unpacking {}: the intermediary would overwrite the source", fileInfo.getFilePath());
+			return;
+		}
+		intermediary.getParentFile().mkdirs();
+		Files.deleteIfExists(intermediary.toPath());
+		logger.trace("intermediary file path: {}", intermediary);
 
-			// prepare the decompression process
-			String funpackPath = ApplicationProperties.getPropertyAsString(ApplicationProperties.FUNPACK_PATH);
-			if (funpackPath == null)
-				funpackPath = "funpack";
-			ProcessBuilder builder = new ProcessBuilder(funpackPath, "-O", newFilePath, filePath);
-			builder.redirectErrorStream(true);
+		String funpackPath = ApplicationProperties.getPropertyAsString(ApplicationProperties.FUNPACK_PATH);
+		if (funpackPath == null)
+			funpackPath = "funpack";
+		ProcessBuilder builder = new ProcessBuilder(funpackPath, "-O", intermediary.getPath(), fileInfo.getFilePath());
+		builder.redirectErrorStream(true);
+		int exitCode;
+		try {
 			Process process = builder.start();
-			BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-			String line;
-			while ((line = reader.readLine()) != null) {
-				logger.debug("funpack output: {}", line);
+			try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+				String line;
+				while ((line = reader.readLine()) != null) {
+					logger.debug("funpack output: {}", line);
+				}
 			}
-			if (process.waitFor() != 0)
-				logger.error("funpack process returned an error");
-			process.destroy();
-
-			// if there was a preprocessed path, make sure to save the new path to the file info object
-			if (ApplicationProperties.getPropertyAsString(ApplicationProperties.PREPROCESSED_PATH) != null) {
-				fileInfo.setPreprocessedFileName(newFilePath);
-				fileInfoDAO.save(fileInfo);
-			}
+			exitCode = process.waitFor();
+		} catch (IOException e) {
+			logger.warn("could not run funpack ({}); reading {} as is", e.getMessage(), fileInfo.getFilePath());
+			clearPreprocessed(fileInfo);
+			return;
 		}
+		if (exitCode != 0 || !intermediary.canRead()) {
+			logger.warn("funpack returned {} for {}; reading it as is", exitCode, fileInfo.getFilePath());
+			Files.deleteIfExists(intermediary.toPath());
+			clearPreprocessed(fileInfo);
+			return;
+		}
+
+		fileInfo.setPreprocessedFileName(intermediary.getPath());
+		fileInfoDAO.save(fileInfo);
+	}
+
+	/**
+	 * The folder's path below the read directory ("" for the read directory itself). Both sides are
+	 * made canonical: the file scan stores canonical paths, which differ from the configured read
+	 * directory when it goes through a symlink (e.g. /var vs /private/var on macOS).
+	 */
+	private String relativeToReadDirectory(String directory) throws IOException {
+		java.nio.file.Path root = new File(readDirectory).getCanonicalFile().toPath();
+		java.nio.file.Path dir = new File(directory).getCanonicalFile().toPath();
+		return dir.startsWith(root) ? root.relativize(dir).toString() : "";
+	}
+
+	/** Forget an intermediary from an earlier run that no longer exists (e.g. on resume). */
+	private void clearPreprocessed(FileInfo fileInfo) {
+		if (fileInfo.getPreprocessedFileName() != null) {
+			fileInfo.setPreprocessedFileName(null);
+			fileInfoDAO.save(fileInfo);
+		}
+	}
+
+	private File temporaryDirectory() throws IOException {
+		if (temporaryDirectory == null) {
+			temporaryDirectory = Files.createTempDirectory("isr-funpack").toFile();
+			temporaryDirectory.deleteOnExit();
+		}
+		return temporaryDirectory;
 	}
 }

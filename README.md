@@ -30,11 +30,13 @@ the sample images in `converter/src/test/resources/test-dirs`. They check, per s
 the metadata values, the output file name and folder, each Cassini calibrator on its own, the converted pixels
 (bit for bit), the EXIF tags written, and the whole pipeline's output files and database rows.
 
-The goldens record the old behaviour **including its bugs** (for example 12-hour timestamps in file names and
-zero-based month folders). When fixing such a bug, update the affected golden lines in the same commit so the
-change in behaviour is visible in review. The unit tests in `.../unit` pin these bugs explicitly as well.
+The goldens started as a record of the old behaviour, bugs included. Bugs fixed since then (12-hour timestamps,
+zero-based month folders, crashes on missing calibration values, and so on) changed their golden lines in the same
+commit, so each change in behaviour is visible in review. Re-record with `-Dgolden.generate=true` and review the
+diff line by line before committing it.
 
-Tests must run in UTC; the surefire configuration sets `-Duser.timezone=UTC`.
+Tests must run in UTC; the surefire configuration sets `-Duser.timezone=UTC`. The converter itself writes all
+times in UTC whatever the machine's time zone.
 
 # Running the Converter
 * Build: `mvn -pl converter -am package -DskipTests`. The runnable jar is `converter/target/converter-<VERSION>.jar`.
@@ -45,3 +47,17 @@ Tests must run in UTC; the surefire configuration sets `-Duser.timezone=UTC`.
   * `cassini.calibration.dir` - path to the directory containing the Cassini calibration files
     (the folder that contains `calib/`, e.g. the one `scripts/fetch-calibration.sh` fills)
 * Run `java -jar converter-<VERSION>.jar` from the command line.
+* Optional properties:
+  * `image.name.sequence` - name output files as a numbered sequence, `TARGET_FILTER_<name>_0000000001`,
+    numbered 1, 2, 3... in order of image time within each target and filter
+  * `funpack.path` - path to cfitsio's `funpack`, used to unpack `.fz` and tile-compressed `.fits` files
+    (default `funpack` on the PATH; if it is missing, `.fits` files are read as they are)
+  * `preprocessed.file.dir` - keep the unpacked FITS files here instead of a temporary folder
+  * `job.process` - resume an interrupted job by its id (logged at the start of each run). Files already
+    converted are skipped and a half-written output is replaced.
+
+Output files go to `<write dir>/YYYY/MM/DD/` by image time (UTC), or `<write dir>/unknown/` under the input file's
+name when the mission isn't recognised.
+
+Jobs are recorded in an H2 database at `~/.isr/converter` (set `isr.db.dir` in the properties file, or `-Disr.db.dir=<folder>`, to move it), which is what
+makes resuming possible. It can be deleted between jobs.

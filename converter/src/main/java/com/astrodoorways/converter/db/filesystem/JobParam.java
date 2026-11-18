@@ -1,5 +1,6 @@
 package com.astrodoorways.converter.db.filesystem;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -42,6 +43,8 @@ public class JobParam {
 		this.name = name;
 	}
 
+	// "value" is a reserved word in H2 2.x, so the table could not be created under that name
+	@Column(name = "param_value")
 	public String getValue() {
 		return value;
 	}

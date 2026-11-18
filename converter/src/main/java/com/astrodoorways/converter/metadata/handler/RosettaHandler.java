@@ -150,7 +150,7 @@ public class RosettaHandler extends AbstractVicarHandler {
 
 	private final Logger logger = LoggerFactory.getLogger(RosettaHandler.class);
 
-	public final SimpleDateFormat ROSETTA_FORMATTER = new SimpleDateFormat("yyyy-MM-DD'T'HH:mm:ss.SSS"); //2014-10-24T11:34:35.924
+	public final SimpleDateFormat ROSETTA_FORMATTER = TimeFormats.utc("yyyy-MM-dd'T'HH:mm:ss.SSS"); //2014-10-24T11:34:35.924
 
 	@Override
 	public Map<String, String> buildValueMapFromMetadata(Node node) {
@@ -173,7 +173,8 @@ public class RosettaHandler extends AbstractVicarHandler {
 	@Override
 	public boolean canProcessMetadata(Node node) {
 		convertMetadataNodeToHashMap(node, "n");
-		return getValueMap().get("MISSION_NAME").contains("ROSETTA");
+		String mission = getValueMap().get("MISSION_NAME");
+		return mission != null && mission.contains("ROSETTA");
 	}
 
 	public void convertMetadataNodeToHashMap(Node node, String prefix) {

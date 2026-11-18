@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
+import com.astrodoorways.converter.metadata.handler.TimeFormats;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
@@ -33,9 +34,10 @@ public class ConvertRunnable implements Runnable {
 	private AtomicInteger counter;
 	private int maxValue;
 	private String type;
+	private boolean replaceExisting;
 
 	private static final List<String> ACCEPTED_EXTENSIONS = Arrays.asList("IMG", "TIFF", "tiff", "FIT", "FITS", "img",
-			"fits", "fit");
+			"fits", "fit", "fz", "FZ");
 
 	public ConvertRunnable() {
 	}
@@ -69,6 +71,7 @@ public class ConvertRunnable implements Runnable {
 		try {
 			logger.trace("about to convert image {} to type {}", metadata.getFileInfo(), type);
 			VicarImageConverter converter = new VicarImageConverter(metadata, seqCount, writeDirectory, type);
+			converter.setReplaceExisting(replaceExisting);
 			converter.convert();
 
 			// EXIF tags are now written by VicarImageConverter together with the pixels
@@ -96,14 +99,17 @@ public class ConvertRunnable implements Runnable {
 		fileInfoDAO.save(fileInfo);
 	}
 
+	/**
+	 * Delete a funpack intermediary that was written to the temporary folder. Intermediaries in
+	 * preprocessed.file.dir are kept, since that folder was asked for.
+	 */
 	private void postProcessImage() {
-		if (filePath.endsWith(".fits")) {
-			String fzFilePath = filePath.substring(0, filePath.length() - 4) + "fz";
-			File fzFile = new File(fzFilePath);
-			if (fzFile.exists()) {
-				new File(filePath).delete();
+		String preprocessed = metadata.getFileInfo().getPreprocessedFileName();
+		if (preprocessed != null
+				&& ApplicationProperties.getPropertyAsString(ApplicationProperties.PREPROCESSED_PATH) == null) {
+			if (!new File(preprocessed).delete()) {
+				logger.debug("could not delete intermediary {}", preprocessed);
 			}
-			fzFile.renameTo(new File(filePath));
 		}
 	}
 
@@ -142,8 +148,8 @@ public class ConvertRunnable implements Runnable {
 		return filePath;
 	}
 
-	public final SimpleDateFormat VICAR_FORMATTER = new SimpleDateFormat("yyyy-DDD'T'HH:mm:ss.SSS'Z'");
-	public final SimpleDateFormat TIMESTAMP_FORMATTER = new SimpleDateFormat("yyyyMMddhhmmssSSS");
+	public final SimpleDateFormat VICAR_FORMATTER = TimeFormats.utc("yyyy-DDD'T'HH:mm:ss.SSS'Z'");
+	public final SimpleDateFormat TIMESTAMP_FORMATTER = TimeFormats.utc("yyyyMMddHHmmssSSS");
 
 	public String convertVicarDateToTimestamp(Date date) {
 		return TIMESTAMP_FORMATTER.format(date);
@@ -195,5 +201,10 @@ public class ConvertRunnable implements Runnable {
 
 	public void setType(String type) {
 		this.type = type;
+	}
+
+	/** Overwrite an existing output file instead of failing (used when resuming a job). */
+	public void setReplaceExisting(boolean replaceExisting) {
+		this.replaceExisting = replaceExisting;
 	}
 }

@@ -1,11 +1,11 @@
-convert.files=[NOTAVAILABLE_EMPTY_NA/NOTAVAILABLE_EMPTY_NA_0000000007w1024-h1024.TIFF]
+convert.files=[unknown/dust-5469-lut-onlyw1024-h1024.TIFF]
 convert.output.0.bands=1
 convert.output.0.count=1048576
 convert.output.0.dataType=4
 convert.output.0.height=1024
 convert.output.0.max=5.395319938659668
 convert.output.0.min=0.0013752810191363096
-convert.output.0.path=<WRITE>/NOTAVAILABLE_EMPTY_NA/NOTAVAILABLE_EMPTY_NA_0000000007w1024-h1024.TIFF
+convert.output.0.path=<WRITE>/unknown/dust-5469-lut-onlyw1024-h1024.TIFF
 convert.output.0.sha256=7f74955692736714b65a1d250e0cb70271ea4581615a9cf3d11ae4271dc46c98
 convert.output.0.sum=237203.71905114898
 convert.output.0.width=1024

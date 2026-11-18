@@ -9,7 +9,7 @@ import org.w3c.dom.Node;
 
 public class GenericMetadataHandler implements MetadataHandler {
 
-	public static final SimpleDateFormat VICAR_FORMATTER = new SimpleDateFormat("yyyy-DDD'T'HH:mm:ss.SSS'Z'");
+	public static final SimpleDateFormat VICAR_FORMATTER = TimeFormats.utc("yyyy-DDD'T'HH:mm:ss.SSS'Z'");
 
 	private Map<String, String> valueMap = new HashMap<>();
 

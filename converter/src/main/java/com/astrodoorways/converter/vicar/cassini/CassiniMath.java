@@ -4,6 +4,11 @@ import Jama.Matrix;
 
 public class CassiniMath {
 
+	/**
+	 * Least-squares straight-line fit, after IDL's LINFIT.
+	 *
+	 * @return the fitted values a + b * x for each x (not the coefficients)
+	 */
 	public static double[] linfit(double[] xArray, double[] yArray) {
 
 		int nx = xArray.length;
@@ -25,17 +30,19 @@ public class CassiniMath {
 		int ss = nx;
 		double sx = total(x);
 		double sy = total(y);
-		Matrix t = subtract(x, sx / sy);
-		double b = total(t.times(y));
+		// t = x - mean(x); products are element by element. This used Matrix.times (a matrix product
+		// of two 1xN rows, which always threw) and divided by sy instead of the count.
+		Matrix t = subtract(x, sx / ss);
+		double b = total(t.arrayTimes(y));
 
-		double st2 = total(t.times(t));
+		double st2 = total(t.arrayTimes(t));
 		b = b / st2;
 		double a = (sy - sx * b) / ss;
 		double sdeva = Math.sqrt((1.0 + sx * sx / (ss * st2)) / ss);
 		double sdevb = Math.sqrt(1.0 / st2);
 
 		Matrix yfit = add(x.times(b), a);
-		return yfit.getColumnPackedCopy();
+		return yfit.getRowPackedCopy();
 	}
 
 	public static Matrix subtract(Matrix m, double subValue) {
@@ -51,7 +58,7 @@ public class CassiniMath {
 		double[] newArray = new double[m.getColumnDimension()];
 		int i = 0;
 		for (double val : m.getRowPackedCopy()) {
-			newArray[i++] = val - addValue;
+			newArray[i++] = val + addValue;
 		}
 		return new Matrix(newArray, 1);
 	}

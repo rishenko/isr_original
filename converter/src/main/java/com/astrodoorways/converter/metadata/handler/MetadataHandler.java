@@ -26,6 +26,14 @@ public interface MetadataHandler {
 
 	String getFileName() throws ParseException;
 
+	/**
+	 * The file name for an image in a sequence run, using a sequence number assigned by the caller.
+	 * Handlers without sequence support ignore the number.
+	 */
+	default String getFileName(int sequenceNumber) throws ParseException {
+		return getFileName();
+	}
+
 	Map<String, String> getValueMap();
 
 	void setValueMap(Map<String, String> valueMap);

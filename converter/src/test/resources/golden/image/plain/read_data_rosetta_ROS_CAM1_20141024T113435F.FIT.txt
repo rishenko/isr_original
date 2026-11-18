@@ -1,11 +1,11 @@
-convert.files=[null/nullw1024-h1024.TIFF]
+convert.files=[unknown/ROS_CAM1_20141024T113435Fw1024-h1024.TIFF]
 convert.output.0.bands=1
 convert.output.0.count=1048576
 convert.output.0.dataType=4
 convert.output.0.height=1024
 convert.output.0.max=4095.0
 convert.output.0.min=227.0
-convert.output.0.path=<WRITE>/null/nullw1024-h1024.TIFF
+convert.output.0.path=<WRITE>/unknown/ROS_CAM1_20141024T113435Fw1024-h1024.TIFF
 convert.output.0.sha256=bd54562c72cce87817f432f5947daa09c6fefa89da17be6884e055bf3cf234f8
 convert.output.0.sum=6.7556439E8
 convert.output.0.width=1024

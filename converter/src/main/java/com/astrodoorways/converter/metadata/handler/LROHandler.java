@@ -13,7 +13,7 @@ public class LROHandler extends AbstractVicarHandler {
 
 	private final Logger logger = LoggerFactory.getLogger(LROHandler.class);
 
-	public final SimpleDateFormat LROC_TIME_FORMATTER = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss"); // 2011-02-28T17:07:39
+	public final SimpleDateFormat LROC_TIME_FORMATTER = TimeFormats.utc("yyyy-MM-dd'T'HH:mm:ss"); // 2011-02-28T17:07:39
 
 	@Override
 	public Map<String, String> buildValueMapFromMetadata(Node node) {

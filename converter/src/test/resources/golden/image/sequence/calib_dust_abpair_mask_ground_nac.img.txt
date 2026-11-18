@@ -1,11 +1,11 @@
-convert.files=[NOTAVAILABLE_EMPTY_NA/NOTAVAILABLE_EMPTY_NA_0000000007w1024-h1024.TIFF]
+convert.files=[unknown/abpair_mask_ground_nacw1024-h1024.TIFF]
 convert.output.0.bands=1
 convert.output.0.count=1048576
 convert.output.0.dataType=4
 convert.output.0.height=1024
 convert.output.0.max=1509.0
 convert.output.0.min=0.0
-convert.output.0.path=<WRITE>/NOTAVAILABLE_EMPTY_NA/NOTAVAILABLE_EMPTY_NA_0000000007w1024-h1024.TIFF
+convert.output.0.path=<WRITE>/unknown/abpair_mask_ground_nacw1024-h1024.TIFF
 convert.output.0.sha256=0dd5ec315203fa912854f31cd4d6c7d8ec932a3b54040cb1a4796b8be93ca880
 convert.output.0.sum=7636082.0
 convert.output.0.width=1024

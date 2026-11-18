@@ -7,7 +7,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,7 +16,7 @@ import com.astrodoorways.converter.ApplicationProperties;
 
 public abstract class AbstractVicarHandler implements MetadataHandler {
 
-	public final SimpleDateFormat VICAR_FORMATTER = new SimpleDateFormat("yyyy-DDD'T'HH:mm:ss.SSS'Z'");
+	public final SimpleDateFormat VICAR_FORMATTER = TimeFormats.utc("yyyy-DDD'T'HH:mm:ss.SSS'Z'");
 
 	private Map<String, String> valueMap = new HashMap<>();
 
@@ -89,19 +88,9 @@ public abstract class AbstractVicarHandler implements MetadataHandler {
 	}
 
 	public Calendar convertVicarDateToDate(String vicarDate) throws ParseException {
-		Date date;
-		try {
-			date = getFormatter().parse(vicarDate);
-		} catch (ParseException e) {
-			if (Pattern.matches(".*\\.\\d{6}\\D*", vicarDate)) {
-				vicarDate = vicarDate.replaceAll("(.*\\.)(\\d{3})(\\d{3})(Z.*)*", "$1$2$4");
-				date = getFormatter().parse(vicarDate);
-			} else {
-				throw e;
-			}
-		}
+		Date date = getFormatter().parse(TimeFormats.normalizeFraction(vicarDate));
 
-		Calendar calendar = Calendar.getInstance();
+		Calendar calendar = TimeFormats.utcCalendar();
 		calendar.setTime(date);
 
 		return calendar;
@@ -118,34 +107,45 @@ public abstract class AbstractVicarHandler implements MetadataHandler {
 
 		try {
 			Calendar date = convertVicarDateToDate(valueMap.get(TIME));
-			fileStructure += date.get(Calendar.YEAR) + "/" + date.get(Calendar.MONTH) + "/"
-					+ date.get(Calendar.DAY_OF_MONTH);
+			fileStructure += dateFolder(date);
 		} catch (Exception e) {
 			// do nothing
 		}
 		return fileStructure;
 	}
 
-	public final SimpleDateFormat TIMESTAMP_FORMATTER = new SimpleDateFormat("yyyyMMddhhmmssSSS");
+	/**
+	 * The year/month/day output folder for a date, e.g. "2012/03/27". Calendar months are
+	 * zero-based, which used to put March in folder "2".
+	 */
+	public static String dateFolder(Calendar date) {
+		return String.format("%d/%02d/%02d", date.get(Calendar.YEAR), date.get(Calendar.MONTH) + 1,
+				date.get(Calendar.DAY_OF_MONTH));
+	}
+
+	public final SimpleDateFormat TIMESTAMP_FORMATTER = TimeFormats.utc("yyyyMMddHHmmssSSS");
 
 	public String convertVicarDateToTimestamp(String vicarDate) throws ParseException {
-		Date date;
-		try {
-			date = getFormatter().parse(vicarDate);
-		} catch (ParseException e) {
-			if (Pattern.matches(".*\\.\\d{6}\\D*", vicarDate)) {
-				vicarDate = vicarDate.replaceAll("(.*\\.)(\\d{3})(\\d{3})(Z.*)*", "$1$2$4");
-				date = getFormatter().parse(vicarDate);
-			} else {
-				throw e;
-			}
-		}
+		Date date = getFormatter().parse(TimeFormats.normalizeFraction(vicarDate));
 
 		return TIMESTAMP_FORMATTER.format(date);
 	}
 
 	@Override
 	public String getFileName() throws ParseException {
+		return buildFileName(null);
+	}
+
+	/**
+	 * @param sequenceNumber the image's number within its target and filter, assigned in time order
+	 *                       by the converter; used only when a sequence name is configured
+	 */
+	@Override
+	public String getFileName(int sequenceNumber) throws ParseException {
+		return buildFileName(sequenceNumber);
+	}
+
+	private String buildFileName(Integer sequenceNumber) throws ParseException {
 		String mission = getValueMap().get(MISSION);
 		String target = getValueMap().get(TARGET);
 		String filter = getValueMap().get(FILTER);
@@ -153,7 +153,9 @@ public abstract class AbstractVicarHandler implements MetadataHandler {
 		try {
 			String time = convertVicarDateToTimestamp(getValueMap().get(TIME));
 			if (isSequencedFile()) {
-				String sequence = Sequencer.incrementAndGet(target, filter) + "";
+				// standalone conversions without an assigned number fall back to a JVM-wide counter
+				int number = sequenceNumber != null ? sequenceNumber : Sequencer.incrementAndGet(target, filter);
+				String sequence = number + "";
 				sequence = "0000000000".substring(sequence.length()) + sequence;
 				fileName = target + "_" + filter + "_" + getSequencedFileText() + "_" + sequence;
 			} else {
@@ -163,7 +165,8 @@ public abstract class AbstractVicarHandler implements MetadataHandler {
 			String time = convertVicarDateToTimestamp(getFormatter().format(Calendar.getInstance().getTime()));
 			fileName = target + "_" + filter + "_" + time;
 		}
-		return fileName;
+		// a "/" in a label value (SDO's mission is "SDO/JSOC-SDP") would add an unintended folder
+		return fileName.replace("/", "-");
 	}
 
 	public Map<String, String> getValueMap() {

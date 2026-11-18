@@ -11,7 +11,7 @@ import org.w3c.dom.Node;
 
 public class SDOHandler extends AbstractVicarHandler {
 
-	public final SimpleDateFormat SDO_TIME_FORMATTER = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SS'Z'");
+	public final SimpleDateFormat SDO_TIME_FORMATTER = TimeFormats.utc("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 
 	@Override
 	public Map<String, String> buildValueMapFromMetadata(Node node) {
@@ -57,8 +57,7 @@ public class SDOHandler extends AbstractVicarHandler {
 		String fileStructure = "";
 		try {
 			Calendar date = convertVicarDateToDate(getValueMap().get(TIME));
-			fileStructure += date.get(Calendar.YEAR) + "/" + date.get(Calendar.MONTH) + "/"
-					+ date.get(Calendar.DAY_OF_MONTH);
+			fileStructure += dateFolder(date);
 		} catch (Exception e) {
 			// do nothing
 		}

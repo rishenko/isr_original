@@ -1,11 +1,11 @@
-convert.files=[NOTAVAILABLE_EMPTY_NA/NOTAVAILABLE_EMPTY_NA_0000000007w512-h512.TIFF]
+convert.files=[unknown/rosat_pspc_rdf2_3_im3w512-h512.TIFF]
 convert.output.0.bands=1
 convert.output.0.count=262144
 convert.output.0.dataType=4
 convert.output.0.height=512
 convert.output.0.max=300.0
 convert.output.0.min=0.0
-convert.output.0.path=<WRITE>/NOTAVAILABLE_EMPTY_NA/NOTAVAILABLE_EMPTY_NA_0000000007w512-h512.TIFF
+convert.output.0.path=<WRITE>/unknown/rosat_pspc_rdf2_3_im3w512-h512.TIFF
 convert.output.0.sha256=6bcac0d42df3938bd8eff89f1538e975508917364e47a1c4a3f65cf7d080cdb3
 convert.output.0.sum=12723.0
 convert.output.0.width=512

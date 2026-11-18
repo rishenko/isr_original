@@ -25,7 +25,7 @@ import static org.junit.Assert.assertTrue;
 public class VicarImageConverterTest {
     private static final String CASSINI_IMG_NEEDS_CALIB = "src/test/resources/test-dirs/read/data/cassini/needsCalib/N1711575444_1.IMG";
     private static final String CASSINI_IMG_NEEDS_CALIB_WRITE = "src/test/resources/test-dirs/write/data/cassini/needsCalib";
-    private static final String CASSINI_IMG_OUTPUT_FILE = "src/test/resources/test-dirs/write/data/cassini/needsCalib/2012/2/27/CASSINI-HUYGENS_ENCELADUS_CL1-CL2_20120327084559975w1024-h1024.TIFF";
+    private static final String CASSINI_IMG_OUTPUT_FILE = "src/test/resources/test-dirs/write/data/cassini/needsCalib/2012/03/27/CASSINI-HUYGENS_ENCELADUS_CL1-CL2_20120327204559975w1024-h1024.TIFF";
 
     @BeforeClass
     public static void setup() {

@@ -17,7 +17,7 @@ public class GalileoHandler extends AbstractVicarHandler {
 
 	private final Logger logger = LoggerFactory.getLogger(GalileoHandler.class);
 
-	public final SimpleDateFormat GALILEO_FORMATTER = new SimpleDateFormat("yyyyDDDHHmmssSSS");
+	public final SimpleDateFormat GALILEO_FORMATTER = TimeFormats.utc("yyyyDDDHHmmssSSS");
 
 	@Override
 	public Map<String, String> buildValueMapFromMetadata(Node node) {

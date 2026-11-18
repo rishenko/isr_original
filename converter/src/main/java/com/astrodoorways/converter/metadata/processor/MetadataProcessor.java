@@ -1,6 +1,7 @@
 package com.astrodoorways.converter.metadata.processor;
 
 import java.text.ParseException;
+import com.astrodoorways.converter.metadata.handler.TimeFormats;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -21,6 +22,7 @@ import com.astrodoorways.converter.metadata.handler.GalileoHandler;
 import com.astrodoorways.converter.metadata.handler.GenericMetadataHandler;
 import com.astrodoorways.converter.metadata.handler.LROHandler;
 import com.astrodoorways.converter.metadata.handler.MetadataHandler;
+import com.astrodoorways.converter.metadata.handler.RosettaHandler;
 import com.astrodoorways.converter.metadata.handler.SDOHandler;
 
 public class MetadataProcessor {
@@ -33,8 +35,8 @@ public class MetadataProcessor {
 	public static final String MISSION = "mission";
 	public static final String METADATAFORMAT = "javax_imageio_1.0";
 
-	public final SimpleDateFormat VICAR_FORMATTER = new SimpleDateFormat("yyyy-DDD'T'HH:mm:ss.SSS'Z'");
-	public final SimpleDateFormat EXIF_FORMATTER = new SimpleDateFormat("yyyy:MM:dd hh:mm:ss");
+	public final SimpleDateFormat VICAR_FORMATTER = TimeFormats.utc("yyyy-DDD'T'HH:mm:ss.SSS'Z'");
+	public final SimpleDateFormat EXIF_FORMATTER = TimeFormats.utc("yyyy:MM:dd HH:mm:ss");
 
 	private MetadataHandler handler;
 
@@ -74,10 +76,36 @@ public class MetadataProcessor {
 		handlerList.add(new GalileoHandler());
 		handlerList.add(new SDOHandler());
 		handlerList.add(new LROHandler());
+		handlerList.add(new RosettaHandler());
+	}
+
+	/**
+	 * Parse a label time with the format of the handler that read the label, falling back to the
+	 * VICAR and ISO formats.
+	 *
+	 * @return the time, or null if it can't be parsed
+	 */
+	public Date parseTime(String time) {
+		String normalized = TimeFormats.normalizeFraction(time);
+		if (normalized == null)
+			return null;
+		List<SimpleDateFormat> formats = new ArrayList<>();
+		if (handler != null)
+			formats.add(handler.getFormatter());
+		formats.add(TimeFormats.utc("yyyy-DDD'T'HH:mm:ss.SSS'Z'"));
+		formats.add(TimeFormats.utc("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"));
+		for (SimpleDateFormat format : formats) {
+			try {
+				return format.parse(normalized);
+			} catch (ParseException e) {
+				// try the next format
+			}
+		}
+		return null;
 	}
 
 	public String convertVicarDateToExifFormat(String vicarDate) throws ParseException {
-		Date date = handler.getFormatter().parse(vicarDate);
+		Date date = handler.getFormatter().parse(TimeFormats.normalizeFraction(vicarDate));
 		return EXIF_FORMATTER.format(date);
 	}
 
@@ -111,5 +139,9 @@ public class MetadataProcessor {
 
 	public String getFileName() throws ParseException {
 		return handler.getFileName();
+	}
+
+	public String getFileName(int sequenceNumber) throws ParseException {
+		return handler.getFileName(sequenceNumber);
 	}
 }
