@@ -1,6 +1,8 @@
 package com.astrodoorways.converter;
 
+import org.junit.After;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -90,6 +92,12 @@ public class ConverterTest {
 		converter.beginConversion();
 	}
 
+	@After
+	public void clearSequence() {
+		System.clearProperty(ApplicationProperties.SEQUENCE);
+	}
+
+	@Ignore("manual batch run against a local folder that no longer exists")
 	@Test
 	public void conversionCassiniBatch() throws Exception {
 		String readDir = "/Users/kevinmcabee/sp/coiss_2098";

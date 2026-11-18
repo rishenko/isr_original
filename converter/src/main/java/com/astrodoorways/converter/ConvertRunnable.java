@@ -4,7 +4,6 @@ import com.astrodoorways.converter.converters.VicarImageConverter;
 import com.astrodoorways.converter.db.filesystem.FileInfo;
 import com.astrodoorways.converter.db.filesystem.FileInfoDAO;
 import com.astrodoorways.converter.db.imagery.Metadata;
-import com.astrodoorways.converter.vicar.exif.VicarThreadedEXIFConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,7 +34,6 @@ public class ConvertRunnable implements Runnable {
 	private int maxValue;
 	private String type;
 
-	private static final long maxFileSizeForExif = 8 * 1024 * 1024 * 100; // byte * kilobyte * megabyte * #megabytes
 	private static final List<String> ACCEPTED_EXTENSIONS = Arrays.asList("IMG", "TIFF", "tiff", "FIT", "FITS", "img",
 			"fits", "fit");
 
@@ -73,14 +71,8 @@ public class ConvertRunnable implements Runnable {
 			VicarImageConverter converter = new VicarImageConverter(metadata, seqCount, writeDirectory, type);
 			converter.convert();
 
+			// EXIF tags are now written by VicarImageConverter together with the pixels
 			logger.trace("converted image {}", converter.getOutputtedFilePaths().toArray());
-			// exif is an expensive operation, only use on smaller files, add override somehow
-			if (new File(getOutputFilePath()).length() < maxFileSizeForExif) {
-				VicarThreadedEXIFConverter exifConverter = new VicarThreadedEXIFConverter();
-				for (String path : converter.getOutputtedFilePaths()) {
-					exifConverter.convert(path, converter.getIIOMetaData());
-				}
-			}
 
 			updateMetadata(converter.getOutputtedFilePaths());
 			postProcessImage();

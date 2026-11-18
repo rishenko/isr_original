@@ -1,0 +1,3 @@
+db.metadata.count=0
+output.files=[]
+pipeline.completed=true

@@ -1,0 +1,29 @@
+name: build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Cache Cassini calibration files
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/isr-calib
+          key: cassini-calib-${{ hashFiles('scripts/fetch-calibration.sh') }}
+
+      - name: Fetch Cassini calibration files
+        run: scripts/fetch-calibration.sh "${{ runner.temp }}/isr-calib/coiss_0011_v3"
+
+      - name: Build and test
+        run: mvn -B verify -Disr.calib.dir="${{ runner.temp }}/isr-calib/coiss_0011_v3"

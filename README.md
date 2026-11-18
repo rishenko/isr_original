@@ -8,31 +8,40 @@ is currently undergoing a massive overhaul to transition from a proof of concept
 application with sane means of maintenance, readability, and testability.
 
 ## Software Stack
-* JDK 8+
-* Spring Boot 2
-* Spring 5
+* JDK 21
+* Spring Boot 3.5 (command-line app; no web server)
 * H2 database
-* NASA's VICAR image library
-* mjeanroy's exiftool library
+* NASA's VICAR image library (vendored in `vicar-source`), JAI 1.1.3 from the OSGeo repository
+* The JDK's built-in TIFF writer (`javax.imageio.plugins.tiff`), which also writes the EXIF tags
 
 ## Environment Setup
 
-* Clone repo
-* Run `mvn clean install -DskipTests` from the top level directory of the project to install dependencies.
+* Clone the repo and use JDK 21 (`export JAVA_HOME=$(/usr/libexec/java_home -v 21)` on macOS).
+* Fetch the Cassini calibration files the tests use (about 33 MB, not the whole 2.7 GB archive):
+  `scripts/fetch-calibration.sh` (defaults to `../isr-calib/coiss_0011_v3`).
+* Build and run all tests: `mvn verify -Disr.calib.dir=../isr-calib/coiss_0011_v3`
+  * Without `-Disr.calib.dir` (or a `converter/src/test/resources/calib` symlink), calibrated test cases are skipped.
 
-In order for the tests to pass, you will need to download Cassini's calibration data - the
-[coiss_0011_v3](https://pds-imaging.jpl.nasa.gov/data/cassini/cassini_orbiter/coiss_0011_v3.tar.gz) archive. Then
- perform the following steps:
-* Expand the archive anywhere on your file system.
-* Create a symlink to the expanded folder - `converter/src/test/resources/calib`
-* Run the tests in Converter to verify they all pass.
+## Tests
+
+The converter tests in `converter/src/test/java/.../golden` are golden-master tests. Their expected values
+(`converter/src/test/resources/golden`) were recorded by running the original 2018 code (commit `fafa508`) over
+the sample images in `converter/src/test/resources/test-dirs`. They check, per sample image: the raw pixels read,
+the metadata values, the output file name and folder, each Cassini calibrator on its own, the converted pixels
+(bit for bit), the EXIF tags written, and the whole pipeline's output files and database rows.
+
+The goldens record the old behaviour **including its bugs** (for example 12-hour timestamps in file names and
+zero-based month folders). When fixing such a bug, update the affected golden lines in the same commit so the
+change in behaviour is visible in review. The unit tests in `.../unit` pin these bugs explicitly as well.
+
+Tests must run in UTC; the surefire configuration sets `-Duser.timezone=UTC`.
 
 # Running the Converter
-* From the command line and within the converter module, run `mvn clean package -DskipTests`.
+* Build: `mvn -pl converter -am package -DskipTests`. The runnable jar is `converter/target/converter-<VERSION>.jar`.
 * Copy the `converter-<VERSION>.jar` and `RunConverter.properties` files to the same path as converter-<VERSION>.jar
 * Modify `RunConverter.properties` to reflect your environment. This includes setting:
   * `image.directory.read` - path containing image files to be processed
   * `image.directory.write` - path to folder for finished, processed image files
-  * `cassini.calibration.dir` - path to the directory containing the cassini calibration files (specifically you need
-).
+  * `cassini.calibration.dir` - path to the directory containing the Cassini calibration files
+    (the folder that contains `calib/`, e.g. the one `scripts/fetch-calibration.sh` fills)
 * Run `java -jar converter-<VERSION>.jar` from the command line.

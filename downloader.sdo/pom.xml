@@ -6,9 +6,7 @@
   <artifactId>downloader.sdo</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <packaging>jar</packaging>
-
   <name>downloader.sdo</name>
-  <url>http://maven.apache.org</url>
 
   <parent>
     <groupId>com.astrodoorways</groupId>
@@ -16,52 +14,26 @@
     <version>1.0.RELEASE</version>
   </parent>
 
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-      </plugin>
-    </plugins>
-  </build>
   <dependencies>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>${junit.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-all</artifactId>
-      <version>1.8.5</version>
-      <scope>test</scope>
+      <groupId>com.google.http-client</groupId>
+      <artifactId>google-http-client</artifactId>
+      <version>1.13.1-beta</version>
     </dependency>
     <dependency>
-      <groupId>org.hamcrest</groupId>
-      <artifactId>hamcrest-integration</artifactId>
-      <version>1.2.1</version>
+      <groupId>com.google.http-client</groupId>
+      <artifactId>google-http-client-jackson</artifactId>
+      <version>1.13.1-beta</version>
     </dependency>
     <dependency>
-      <groupId>net.avh4.util</groupId>
-      <artifactId>imagecomparison</artifactId>
-      <version>0.0.2</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-    	<groupId>com.google.http-client</groupId>
-    	<artifactId>google-http-client</artifactId>
-    	<version>1.13.1-beta</version>
-    </dependency>
-    <dependency>
-    	<groupId>com.google.http-client</groupId>
-    	<artifactId>google-http-client-jackson</artifactId>
-    	<version>1.13.1-beta</version>
-    </dependency>
-    <dependency>
-    	<groupId>nom.tam</groupId>
-    	<artifactId>fits</artifactId>
-    	<version>0.0.1-SNAPSHOT</version>
+      <groupId>nom.tam</groupId>
+      <artifactId>fits</artifactId>
+      <version>0.0.1-SNAPSHOT</version>
     </dependency>
   </dependencies>
 </project>

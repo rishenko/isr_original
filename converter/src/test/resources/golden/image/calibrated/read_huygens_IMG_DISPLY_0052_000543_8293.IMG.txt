@@ -1,0 +1,4 @@
+convert.exception=java.lang.RuntimeException
+convert.files=[]
+convert.message=no image reader was found for <INPUT_DIR>/IMG_DISPLY_0052_000543_8293.IMG
+read=no reader

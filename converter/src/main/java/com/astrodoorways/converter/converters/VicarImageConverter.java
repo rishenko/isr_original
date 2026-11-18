@@ -8,10 +8,8 @@ import com.astrodoorways.converter.vicar.cassini.CassiniDustRingCalibrator;
 import com.astrodoorways.converter.vicar.cassini.DebiasCalibrator;
 import com.astrodoorways.converter.vicar.cassini.DivideByFlatsCalibrator;
 import com.astrodoorways.converter.vicar.cassini.Lut8to12BitCalibrator;
+import com.astrodoorways.converter.vicar.exif.TiffExifMetadata;
 import com.google.common.io.Files;
-import com.tomgibara.imageio.impl.tiff.TIFFLZWCompressor;
-import com.tomgibara.imageio.tiff.TIFFCompressor;
-import com.tomgibara.imageio.tiff.TIFFImageWriteParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +37,7 @@ import java.util.Map;
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
+import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.stream.ImageOutputStream;
@@ -328,16 +327,16 @@ public class VicarImageConverter {
     }
 
     /**
-     * Writes image to output stream using given image writer.
+     * Writes image to output stream using the JDK's TIFF writer: LZW compression, no predictor,
+     * with the EXIF tags (see TiffExifMetadata) written in the same pass.
      */
     private void doWrite(RenderedImage im, ImageWriter writer, ImageOutputStream output) throws IOException {
         writer.setOutput(output);
-        final TIFFImageWriteParam imageWriteParam = new TIFFImageWriteParam(null);
-        final TIFFCompressor compressor = new TIFFLZWCompressor(0);
-        imageWriteParam.setCompressionMode(TIFFImageWriteParam.MODE_EXPLICIT);
-        imageWriteParam.setTIFFCompressor(compressor);
-        imageWriteParam.setCompressionType(compressor.getCompressionType());
-        writer.write(iioMetadata, new IIOImage(im, null, iioMetadata), imageWriteParam);
+        final ImageWriteParam imageWriteParam = writer.getDefaultWriteParam();
+        imageWriteParam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+        imageWriteParam.setCompressionType("LZW");
+        final IIOMetadata tiffMetadata = TiffExifMetadata.build(writer, im, imageWriteParam, iioMetadata);
+        writer.write(null, new IIOImage(im, null, tiffMetadata), imageWriteParam);
     }
 
     /**

@@ -3,6 +3,9 @@ package com.astrodoorways.converter.converters;
 import com.astrodoorways.converter.ApplicationProperties;
 import com.astrodoorways.converter.db.filesystem.FileInfo;
 import com.astrodoorways.converter.db.imagery.Metadata;
+import com.astrodoorways.converter.golden.ImageGoldenMasterTest;
+import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -26,7 +29,15 @@ public class VicarImageConverterTest {
 
     @BeforeClass
     public static void setup() {
-        ApplicationProperties.setProperty(ApplicationProperties.CASSINI_CALIBRATION_DIR, "src/test/resources/calib");
+        // calibration files: -Disr.calib.dir=... or a src/test/resources/calib symlink (see README)
+        Assume.assumeTrue("Cassini calibration files not available", ImageGoldenMasterTest.calibrationDir() != null);
+        ApplicationProperties.setProperty(ApplicationProperties.CASSINI_CALIBRATION_DIR, ImageGoldenMasterTest.calibrationDir());
+    }
+
+    @AfterClass
+    public static void tearDown() {
+        // don't leak calibration into tests that run later in the same JVM
+        System.clearProperty(ApplicationProperties.CASSINI_CALIBRATION_DIR);
     }
 
     @Test
