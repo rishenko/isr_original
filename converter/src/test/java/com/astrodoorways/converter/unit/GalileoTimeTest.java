@@ -1,6 +1,6 @@
 package com.astrodoorways.converter.unit;
 
-import com.astrodoorways.converter.metadata.handler.GalileoHandler;
+import com.astrodoorways.converter.mission.galileo.GalileoHandler;
 import com.astrodoorways.converter.metadata.handler.MetadataHandler;
 import org.junit.Test;
 import org.w3c.dom.Document;

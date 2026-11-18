@@ -2,10 +2,10 @@ package com.astrodoorways.converter.unit;
 
 import com.astrodoorways.converter.ApplicationProperties;
 import com.astrodoorways.converter.ConvertRunnable;
-import com.astrodoorways.converter.metadata.handler.CassiniHandler;
+import com.astrodoorways.converter.mission.cassini.CassiniHandler;
 import com.astrodoorways.converter.metadata.handler.MetadataHandler;
-import com.astrodoorways.converter.metadata.handler.RosettaHandler;
-import com.astrodoorways.converter.metadata.handler.SDOHandler;
+import com.astrodoorways.converter.mission.rosetta.RosettaHandler;
+import com.astrodoorways.converter.mission.sdo.SDOHandler;
 import com.astrodoorways.converter.metadata.handler.TimeFormats;
 import org.junit.After;
 import org.junit.Before;

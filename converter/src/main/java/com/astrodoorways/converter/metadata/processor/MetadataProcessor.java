@@ -17,13 +17,9 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import com.astrodoorways.converter.metadata.handler.CassiniHandler;
-import com.astrodoorways.converter.metadata.handler.GalileoHandler;
-import com.astrodoorways.converter.metadata.handler.GenericMetadataHandler;
-import com.astrodoorways.converter.metadata.handler.LROHandler;
 import com.astrodoorways.converter.metadata.handler.MetadataHandler;
-import com.astrodoorways.converter.metadata.handler.RosettaHandler;
-import com.astrodoorways.converter.metadata.handler.SDOHandler;
+import com.astrodoorways.converter.mission.MissionPlugin;
+import com.astrodoorways.converter.mission.Missions;
 
 public class MetadataProcessor {
 
@@ -41,6 +37,8 @@ public class MetadataProcessor {
 	private MetadataHandler handler;
 
 	private final List<MetadataHandler> handlerList = new ArrayList<>();
+	private final List<MissionPlugin> missionList = new ArrayList<>();
+	private MissionPlugin mission = Missions.UNKNOWN;
 
 	final Logger logger = LoggerFactory.getLogger(MetadataProcessor.class);
 
@@ -55,28 +53,38 @@ public class MetadataProcessor {
 		Node node = metadata.getAsTree(METADATAFORMAT);
 		if (node == null)
 			node = metadata.getAsTree(metadata.getNativeMetadataFormatName());
-		handler = findMetadataHandler(node);
+		findMetadataHandler(node);
 		return handler.buildValueMapFromMetadata(node);
 	}
 
-	private MetadataHandler findMetadataHandler(Node node) {
-		for (MetadataHandler handler : handlerList) {
+	/** Ask each plugin's handler in turn; sets {@link #handler} and {@link #mission}. */
+	private void findMetadataHandler(Node node) {
+		for (int i = 0; i < handlerList.size(); i++) {
+			MetadataHandler candidate = handlerList.get(i);
 			try {
-				if (handler.canProcessMetadata(node))
-					return handler;
+				if (candidate.canProcessMetadata(node)) {
+					handler = candidate;
+					mission = missionList.get(i);
+					return;
+				}
 			} catch (Exception e) {
-				logger.error("{} errored attempting to inspect metadata", handler);
+				logger.error("{} errored attempting to inspect metadata", candidate);
 			}
 		}
-		return new GenericMetadataHandler();
+		handler = Missions.UNKNOWN.newHandler();
+		mission = Missions.UNKNOWN;
+	}
+
+	/** The plugin for the image last passed to {@link #process}, or the unknown-mission plugin. */
+	public MissionPlugin getMission() {
+		return mission;
 	}
 
 	private void buildHandlerMap() {
-		handlerList.add(new CassiniHandler());
-		handlerList.add(new GalileoHandler());
-		handlerList.add(new SDOHandler());
-		handlerList.add(new LROHandler());
-		handlerList.add(new RosettaHandler());
+		for (MissionPlugin plugin : Missions.all()) {
+			missionList.add(plugin);
+			handlerList.add(plugin.newHandler());
+		}
 	}
 
 	/**

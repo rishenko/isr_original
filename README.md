@@ -38,6 +38,21 @@ diff line by line before committing it.
 Tests must run in UTC; the surefire configuration sets `-Duser.timezone=UTC`. The converter itself writes all
 times in UTC whatever the machine's time zone.
 
+# Missions
+
+Mission-specific code lives in `converter/src/main/java/com/astrodoorways/converter/mission`, one package
+per mission. Each has a `MissionPlugin` that supplies:
+
+* a label handler (`MetadataHandler`), which recognises the mission's files and extracts the mission,
+  target, filter, time and exposure used for naming and EXIF, and
+* optional processing of the pixels before they are written; Cassini's runs its calibration chain.
+
+To add a mission, add a package with a plugin and a handler, and list the plugin in `Missions`. Handlers
+are asked in that order and the first that recognises a file is used. Files no plugin recognises are
+converted without processing into `unknown/`.
+
+Current plugins: Cassini (with calibration), Galileo, SDO, LRO and Rosetta (labels only).
+
 # Running the Converter
 * Build: `mvn -pl converter -am package -DskipTests`. The runnable jar is `converter/target/converter-<VERSION>.jar`.
 * Copy the `converter-<VERSION>.jar` and `RunConverter.properties` files to the same path as converter-<VERSION>.jar

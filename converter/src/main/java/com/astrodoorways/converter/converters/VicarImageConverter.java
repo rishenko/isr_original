@@ -3,11 +3,7 @@ package com.astrodoorways.converter.converters;
 import com.astrodoorways.converter.ApplicationProperties;
 import com.astrodoorways.converter.db.imagery.Metadata;
 import com.astrodoorways.converter.metadata.processor.MetadataProcessor;
-import com.astrodoorways.converter.vicar.cassini.BitweightCalibrator;
-import com.astrodoorways.converter.vicar.cassini.CassiniDustRingCalibrator;
-import com.astrodoorways.converter.vicar.cassini.DebiasCalibrator;
-import com.astrodoorways.converter.vicar.cassini.DivideByFlatsCalibrator;
-import com.astrodoorways.converter.vicar.cassini.Lut8to12BitCalibrator;
+import com.astrodoorways.converter.mission.MissionPlugin;
 import com.astrodoorways.converter.vicar.exif.TiffExifMetadata;
 import com.google.common.io.Files;
 import org.slf4j.Logger;
@@ -122,13 +118,11 @@ public class VicarImageConverter {
         return metadataProcessor.process(iioMetadata);
     }
 
+    /** Mission-specific processing (e.g. Cassini calibration), done by the mission's plugin. */
     private BufferedImage postProcessImage(BufferedImage image, Map<String, String> valueMap) throws IOException {
-        if (valueMap.get(MetadataProcessor.MISSION).startsWith("CAS")
-                && ApplicationProperties.hasProperty(ApplicationProperties.CASSINI_CALIBRATION_DIR)) {
-            logger.trace("calibrating");
-            return calibrateCassiniImages(image);
-        }
-        return image;
+        MissionPlugin mission = metadataProcessor.getMission();
+        logger.trace("{} processing for {}", mission.name(), inputFilePath);
+        return mission.process(image, iioMetadata, valueMap);
     }
 
     /**
@@ -153,70 +147,6 @@ public class VicarImageConverter {
         final DataBuffer dataBuffer = new DataBufferDouble(outputRasterArray, outputRasterArray.length);
         final WritableRaster raster = Raster.createWritableRaster(sampleModel, dataBuffer, new Point(0, 0));
         return new BufferedImage(colorModel, raster, false, null);
-    }
-
-    /**
-     * Perform all Cassini related image calibrations.
-     *
-     * @param image the image to be calibrated
-     * @return a calibrated version of the image
-     * @throws IOException issues related to reading calibration related files
-     */
-    public BufferedImage calibrateCassiniImages(BufferedImage image) throws IOException {
-        final int width = image.getWidth();
-        final int height = image.getHeight();
-
-        logger.trace("getting cassini calibration directory");
-        final String cassCalibDir = ApplicationProperties.getPropertyAsString("cassini.calibration.dir");
-
-        final double[] rasterArray = image.getRaster().getPixels(0, 0, width, height, new double[width * height]);
-
-        boolean isCalibrated;
-        logger.trace("lut 8to12 calibration");
-        boolean isCalibratedLut = isCalibrated = new Lut8to12BitCalibrator().calibrate(rasterArray, iioMetadata);
-
-        logger.trace("bitweight calibration");
-        isCalibrated = isCalibrated | new BitweightCalibrator(cassCalibDir).calibrate(rasterArray, iioMetadata);
-
-        logger.trace("debias calibration");
-        isCalibrated = isCalibrated | new DebiasCalibrator().calibrate(rasterArray, iioMetadata);
-
-        logger.trace("dust calibration");
-        isCalibrated = isCalibrated | new CassiniDustRingCalibrator(cassCalibDir).calibrate(rasterArray, iioMetadata);
-
-        logger.trace("divide by flats calibration");
-        isCalibrated = isCalibrated | new DivideByFlatsCalibrator(cassCalibDir).calibrate(rasterArray, iioMetadata);
-
-        return buildImagePostCalibration(width, height, rasterArray, isCalibrated, isCalibratedLut);
-    }
-
-    private BufferedImage buildImagePostCalibration(int width, int height, double[] rasterArray, boolean isCalibrated, boolean isCalibratedLut) {
-        BufferedImage imageNew;
-        if (isCalibrated) {
-            logger.trace("{} has been CALIBRATED", inputFilePath);
-
-            boolean needsNormalized = Arrays.stream(rasterArray).anyMatch((val) -> val > 1.0d);
-            if (needsNormalized) {
-                double bitDivisor = isCalibratedLut ? 1 << 12 : 1 << 16;
-                for (int i = 0; i < rasterArray.length; i++) {
-                    rasterArray[i] = rasterArray[i] / bitDivisor;
-                }
-                logger.trace("{} has been NORMALIZED with bit depth of {}", new Object[]{inputFilePath, bitDivisor});
-            }
-
-            final DataBuffer dataBuffer = new DataBufferDouble(rasterArray, rasterArray.length);
-            final SampleModel sampleModel = new PixelInterleavedSampleModel(DataBuffer.TYPE_FLOAT, width, height, 1, width,
-                    new int[1]);
-            final WritableRaster raster = Raster.createWritableRaster(sampleModel, dataBuffer, new Point(0, 0));
-            final ColorModel colorModel = new ComponentColorModel(ColorSpace.getInstance(ColorSpace.CS_GRAY), false, false,
-                    Transparency.OPAQUE, DataBuffer.TYPE_FLOAT);
-            imageNew = new BufferedImage(colorModel, raster, false, null);
-
-        } else {
-            imageNew = new BufferedImage(width, height, BufferedImage.TYPE_USHORT_GRAY);
-            imageNew.getRaster().setPixels(0, 0, width, height, rasterArray);
-        }
-        return imageNew;
     }
 
     /**

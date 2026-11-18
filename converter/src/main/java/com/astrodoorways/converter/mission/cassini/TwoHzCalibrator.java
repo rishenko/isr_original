@@ -1,4 +1,4 @@
-package com.astrodoorways.converter.vicar.cassini;
+package com.astrodoorways.converter.mission.cassini;
 
 import java.io.IOException;
 

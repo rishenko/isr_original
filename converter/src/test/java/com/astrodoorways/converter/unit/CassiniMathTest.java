@@ -1,7 +1,7 @@
 package com.astrodoorways.converter.unit;
 
 import Jama.Matrix;
-import com.astrodoorways.converter.vicar.cassini.CassiniMath;
+import com.astrodoorways.converter.mission.cassini.CassiniMath;
 import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;

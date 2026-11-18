@@ -1,4 +1,4 @@
-package com.astrodoorways.converter.vicar.cassini;
+package com.astrodoorways.converter.mission.cassini;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

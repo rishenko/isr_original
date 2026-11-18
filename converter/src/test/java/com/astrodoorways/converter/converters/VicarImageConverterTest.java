@@ -1,5 +1,7 @@
 package com.astrodoorways.converter.converters;
 
+import com.astrodoorways.converter.mission.cassini.CassiniMission;
+
 import com.astrodoorways.converter.ApplicationProperties;
 import com.astrodoorways.converter.db.filesystem.FileInfo;
 import com.astrodoorways.converter.db.imagery.Metadata;
@@ -48,7 +50,7 @@ public class VicarImageConverterTest {
         BufferedImage outputImage = vicarConverter.readImage(file);
         vicarConverter.buildMetadataMap(vicarConverter.getIIOMetaData());
         outputImage = vicarConverter.buildOutputImage(outputImage);
-        assertTrue(vicarConverter.calibrateCassiniImages(outputImage) != null);
+        assertTrue(new CassiniMission().calibrate(outputImage, vicarConverter.getIIOMetaData()) != null);
     }
 
     @Test
