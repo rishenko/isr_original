@@ -11,7 +11,11 @@
 # images may need more; DivideByFlatsCalibrator picks them from calib/slope/slope_db_2.tab.
 set -euo pipefail
 
-BASE="https://planetarydata.jpl.nasa.gov/img/data/cassini/cassini_orbiter/coiss_0011_v3/calib"
+# PDS Ring-Moon Systems Node mirror. The JPL imaging node URL used before
+# (planetarydata.jpl.nasa.gov/img/data/cassini/...) returned 502 errors in November 2026.
+# Version 3 of COISS_0011 is the edition the golden tests were recorded with; the current
+# edition (v4, 2019) has re-derived bitweight tables, so switching would change calibrated output.
+BASE="https://pds-rings.seti.org/holdings/volumes/COISS_0xxx_v3/COISS_0011/calib"
 TARGET="${1:-$(cd "$(dirname "$0")/.." && pwd)/../isr-calib/coiss_0011_v3}"
 
 fetch() {
