@@ -1,11 +1,41 @@
 # In Saturn's Rings Image Processing Application
+
+> **No longer maintained.** This repository is kept public for reference, and it will get no further updates.
+> To convert NASA planetary images to 32-bit floating point TIFF today, use [GDAL](https://gdal.org) instead (see below).
+
 Original software written for the film In Saturn's Rings. Downloader acquires the files through web scraping
 PDS Imaging sites, and the Controller converts the images from NASA Vicar/PDS/FITs formats to 
 32-bit floating point TIFF.
 
-This is a proof of concept application from late 2012 that quickly turned into production use for the film. It
-is currently undergoing a massive overhaul to transition from a proof of concept to a true production
-application with sane means of maintenance, readability, and testability.
+This is a proof of concept application from late 2012 that quickly turned into production use for the film.
+
+## Use GDAL instead
+
+The PDS archives now publish calibrated images, and GDAL reads their formats directly (VICAR, PDS3, PDS4 and FITS)
+and writes 32-bit float TIFF. Tested with GDAL 3.13 on this project's sample files, these commands match the
+pixel values (minimum, maximum and sum) that this project's converter produced:
+
+```sh
+# Cassini ISS calibrated image (VICAR, already 32-bit float I/F)
+gdal_translate -ot Float32 N1701606691_1_CALIB.IMG N1701606691_1_CALIB.tif
+
+# Voyager ISS calibrated or GEOMED image (PDS3, 16-bit integers).
+# Multiply by REFLECTANCE_SCALING_FACTOR from the .LBL file (3.345E-04 here) to get I/F.
+gdal_translate -ot Float32 -scale 0 1 0 0.0003345 C3250015_GEOMED.LBL C3250015_GEOMED.tif
+
+# New Horizons LORRI calibrated image (open the PDS3 label, not the .fit file)
+gdal_translate -ot Float32 lor_0034853589_0x630_sci.lbl lor_0034853589_0x630_sci.tif
+```
+
+Where to get calibrated data:
+- Cassini and Voyager: [OPUS](https://opus.pds-rings.seti.org) at the PDS Ring-Moon Systems Node
+- New Horizons: the [PDS Small Bodies Node](https://pds-smallbodies.astro.umd.edu), also mirrored at the
+  [Ring-Moon Systems Node](https://pds-rings.seti.org/newhorizons/)
+
+Differences from this application: GDAL keeps PDS label fields as TIFF metadata rather than EXIF, and it doesn't
+rename files or sort them into dated folders.
+
+The documentation below describes the original 2018 code.
 
 ## Software Stack
 * JDK 8+
